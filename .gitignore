@@ -10,6 +10,7 @@ src/**/__pycache__/
 src/*.pyc
 src/app.db
 src/.env
+src/uv.lock
 
 # Node
 frontend/node_modules/
