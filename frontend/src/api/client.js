@@ -17,3 +17,11 @@ export function fetchWeek(startDate = null) {
   const query = startDate ? `?start=${startDate}` : ''
   return request(`/week${query}`)
 }
+
+/**
+ * Fetch ranked probable pitchers for the current week.
+ * @param {string} profile - scoring profile id (balanced, k_focused, era_whip, closer)
+ */
+export function fetchRankings(profile = 'balanced') {
+  return request(`/rankings?profile=${profile}`)
+}

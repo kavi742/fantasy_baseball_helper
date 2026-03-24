@@ -7,7 +7,7 @@ function formatWeekRange(startDate, endDate) {
   return `${fmt(startDate)} – ${fmt(endDate)}, ${endYear}`
 }
 
-export function Header({ data, loading, isCurrentWeek, onPrev, onNext, onToday, onRefresh }) {
+export function Header({ data, loading, isCurrentWeek, onPrev, onNext, onToday, onRefresh, showWeekNav = true }) {
   return (
     <header className="app-header">
       <div className="header-top">
@@ -29,24 +29,26 @@ export function Header({ data, loading, isCurrentWeek, onPrev, onNext, onToday, 
         </button>
       </div>
 
-      <div className="week-nav">
-        <button className="btn btn-icon" onClick={onPrev} title="Previous week">
-          <ChevronLeft size={18} />
-        </button>
-        <div className="week-nav-center">
-          <span className="week-range">
-            {data ? formatWeekRange(data.start_date, data.end_date) : '—'}
-          </span>
-          {!isCurrentWeek && (
-            <button className="btn btn-small" onClick={onToday}>
-              This week
-            </button>
-          )}
+      {showWeekNav && (
+        <div className="week-nav">
+          <button className="btn btn-icon" onClick={onPrev} title="Previous week">
+            <ChevronLeft size={18} />
+          </button>
+          <div className="week-nav-center">
+            <span className="week-range">
+              {data ? formatWeekRange(data.start_date, data.end_date) : '—'}
+            </span>
+            {!isCurrentWeek && (
+              <button className="btn btn-small" onClick={onToday}>
+                This week
+              </button>
+            )}
+          </div>
+          <button className="btn btn-icon" onClick={onNext} title="Next week">
+            <ChevronRight size={18} />
+          </button>
         </div>
-        <button className="btn btn-icon" onClick={onNext} title="Next week">
-          <ChevronRight size={18} />
-        </button>
-      </div>
+      )}
     </header>
   )
 }
