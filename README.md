@@ -52,16 +52,17 @@ A Python web application that surfaces probable starting pitchers for the upcomi
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+
+- [UV](https://github.com/astral-sh/uv) (Python package manager)
 
-### Backend Setup
+### Backend Setup (with UV)
+
+The backend uses `pyproject.toml` for dependencies. UV reads this automatically.
 
 ```bash
 cd src
-python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-pip install -r requirements.txt
+uv sync
 cp .env.example .env
-python main.py
+uv run python main.py
 ```
 
 The API runs at `http://localhost:8000` with docs at `http://localhost:8000/docs`
