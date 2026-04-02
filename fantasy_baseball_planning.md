@@ -320,14 +320,14 @@ Phase 2.5)
 Phase 3 --- Add/drop recommendations & fantasy integration
 
   -----------------------------------------------------------------------
-  **Goal:** Connect to the user\'s Yahoo Fantasy league to personalise
+  **Goal:** Connect to the user's Yahoo Fantasy league to personalise
   recommendations against their actual roster.
 
   -----------------------------------------------------------------------
 
 - Implement Yahoo Fantasy OAuth flow via the yahoo-fantasy-api library
 
-- Fetch the user\'s current roster and the full league player pool
+- Fetch the user's current roster and the full league player pool
   (owned, waivers, free agents)
 
 - Build an add/drop scoring model: combine upcoming schedule, platoon
@@ -335,6 +335,58 @@ Phase 3 --- Add/drop recommendations & fantasy integration
 
 - Surface the top add/drop recommendations ranked by projected value for
   the current week
+
+**Weekly Category Gap Analysis & Streaming Recommendations**
+
+A key addition that runs throughout the week to help managers catch up in
+categories they're lacking.
+
+- **Category gap detection** --- Compare the user's current standings to
+  the league median in each head-to-head category. Identify which
+  categories are at risk of losing (below median) or could be gained
+  (above median but not locked).
+
+- **Streaming recommendations** --- Based on identified gaps, surface
+  available pitchers (waiver wire / free agents) who have upcoming starts
+  in the remaining days of the week. Rank by projected category contribution
+  (e.g., high K for strikeout-deficient teams, QS for win-deficient teams).
+
+- **Gap severity scoring** --- Rank detected gaps by severity: critical
+  (likely to lose), vulnerable (close to median), secure (safe lead). This
+  helps managers prioritize which categories to target.
+
+- **In-season adjustment** --- As the week progresses, re-evaluate gaps
+  daily. If a gap is already lost, pivot to protecting other categories
+  rather than chasing the impossible.
+
+- **Opponent-aware suggestions** --- Factor in not just the pitcher's
+  schedule but the quality of opponent they face. A streamer facing a
+  weak-hitting team is more valuable than one facing a top offense.
+
+New Backend Components (Weekly Category Gap)
+
+**services/category_gap.py** --- Compares user's roster stats to league
+median, computes gap severity, and returns ranked list of weak categories.
+
+**services/streaming.py** --- Finds available pitchers with remaining starts
+this week, fetches their upcoming opponent difficulty, and scores them
+against the user's category needs. Returns streaming candidates ranked by
+category value.
+
+**routes/league.py** --- Extended with GET /api/league/category-gaps and GET
+/api/league/streaming-targets. Requires Yahoo OAuth (Phase 3).
+
+New Frontend Components (Weekly Category Gap)
+
+**components/CategoryGaps.jsx** --- Dashboard showing current category
+gaps with severity indicators (critical/vulnerable/secure). Updates daily.
+
+**components/StreamingSuggestions.jsx** --- List of recommended streamers
+based on identified gaps. Shows pitcher, next start date, opponent
+difficulty, and projected category impact.
+
+The Category Gaps and Streaming Suggestions can be displayed on the main
+dashboard or within a dedicated "Gap Recovery" section of the app.
 
 Scheduled Transactions
 
@@ -586,10 +638,33 @@ as an optional dependency group.
 
 Phase 5 --- League Power Rankings & Trade Targets
 
-**Goal:** Rank every team in the user's Yahoo Fantasy league by
-projected rest-of-season performance, identify which categories each
-team is strong or weak in, and surface actionable trade targets so the
-user can exploit mismatches before the trade deadline.
+**Goal:** Analyze every team in the user's Yahoo Fantasy league to determine
+their strengths and weaknesses, and use this analysis to identify the best
+trade targets. Rank every team by projected rest-of-season performance,
+identify which categories each team is strong or weak in, and surface
+actionable trade targets so the user can exploit mismatches before the trade
+deadline.
+
+Team Analysis & Strengths/Weaknesses Mapping
+
+- **Full league scan** --- Pull all teams in the league and compute their
+  current standings across all head-to-head categories (standard 5x5: R, HR,
+  RBI, SB, AVG for batting; W, K, ERA, WHIP, SV+H for pitching).
+
+- **Category grades per team** --- Assign each team a grade (1-10) for each
+  category based on where they rank relative to the rest of the league.
+  This creates a "strengths/weaknesses map" for every team.
+
+- **Visual team profile** --- Each team's profile shows at a glance what
+  categories they excel in (strengths) and where they struggle (weaknesses).
+  This makes it easy to identify which teams might be looking to trade away
+  players in their strong categories to address weaknesses.
+
+- **Trade target identification** --- Cross-reference the user's category
+  profile against every other team's profile. Identify teams where the user
+  has a surplus in what the other team needs, and the other team has a
+  surplus in what the user needs. These are complementary mismatches that
+  lead to win-win trades.
 
 Power Rankings
 
