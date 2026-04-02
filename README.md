@@ -62,7 +62,7 @@ The backend uses `pyproject.toml` for dependencies. UV reads this automatically.
 cd src
 uv sync
 cp .env.example .env
-uv run python main.py
+uv run uvicorn main:app --reload
 ```
 
 The API runs at `http://localhost:8000` with docs at `http://localhost:8000/docs`
