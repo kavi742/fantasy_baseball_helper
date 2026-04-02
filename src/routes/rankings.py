@@ -4,6 +4,7 @@ from datetime import date
 
 from database import get_db
 from services.rankings import get_rankings, PROFILES
+from services.reliever_rankings import get_reliever_rankings as fetch_reliever_rankings
 
 router = APIRouter()
 
@@ -23,3 +24,10 @@ def list_profiles():
         {"id": pid, "label": p["label"], "description": p["description"]}
         for pid, p in PROFILES.items()
     ]
+
+
+@router.get("/api/relievers")
+def get_reliever_rankings(
+    season: int = Query(default=None),
+):
+    return fetch_reliever_rankings(season)

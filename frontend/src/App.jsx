@@ -3,13 +3,15 @@ import { Header } from './components/Header'
 import { Filters } from './components/Filters'
 import { WeekView } from './components/WeekView'
 import { Rankings } from './pages/Rankings'
+import { RelieverRankings } from './pages/RelieverRankings'
 import { useWeek } from './hooks/useWeek'
 import { useFilters } from './hooks/useFilters'
 import { useTheme } from './hooks/useTheme'
 
 const TABS = [
-  { id: 'week',     label: 'Week View' },
-  { id: 'rankings', label: 'Rankings' },
+  { id: 'week',       label: 'Week View' },
+  { id: 'starters',   label: 'Starters' },
+  { id: 'relievers',  label: 'Relievers' },
 ]
 
 export default function App() {
@@ -71,7 +73,8 @@ export default function App() {
             )}
           </>
         )}
-        {tab === 'rankings' && <Rankings />}
+        {tab === 'starters' && <Rankings />}
+        {tab === 'relievers' && <RelieverRankings />}
       </main>
     </div>
   )

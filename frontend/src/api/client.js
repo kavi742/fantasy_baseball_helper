@@ -1,12 +1,34 @@
 const BASE = '/api'
 
-async function request(path) {
+const cache = new Map()
+const CACHE_TTL_MS = 5 * 60 * 1000
+
+function getCached(key) {
+  const entry = cache.get(key)
+  if (entry && Date.now() - entry.ts < CACHE_TTL_MS) {
+    return entry.data
+  }
+  cache.delete(key)
+  return null
+}
+
+function setCache(key, data) {
+  cache.set(key, { data, ts: Date.now() })
+}
+
+async function request(path, cacheKey = null) {
+  if (cacheKey) {
+    const cached = getCached(cacheKey)
+    if (cached) return cached
+  }
   const res = await fetch(`${BASE}${path}`)
   if (!res.ok) {
     const text = await res.text()
     throw new Error(`API error ${res.status}: ${text}`)
   }
-  return res.json()
+  const data = await res.json()
+  if (cacheKey) setCache(cacheKey, data)
+  return data
 }
 
 /**
@@ -15,7 +37,7 @@ async function request(path) {
  */
 export function fetchWeek(startDate = null) {
   const query = startDate ? `?start=${startDate}` : ''
-  return request(`/week${query}`)
+  return request(`/week${query}`, `week:${startDate || 'current'}`)
 }
 
 /**
@@ -25,5 +47,16 @@ export function fetchWeek(startDate = null) {
 export function fetchRankings(profile = 'balanced', weekStart = null) {
   const params = new URLSearchParams({ profile })
   if (weekStart) params.append('week_start', weekStart)
-  return request(`/rankings?${params}`)
+  const cacheKey = `rankings:${profile}:${weekStart || 'current'}`
+  return request(`/rankings?${params}`, cacheKey)
+}
+
+/**
+ * Fetch ranked relievers/bullpen pitchers.
+ * @param {number|null} season - season year, or null for current year
+ */
+export function fetchRelievers(season = null) {
+  const params = new URLSearchParams()
+  if (season) params.append('season', season)
+  return request(`/relievers?${params}`, `relievers:${season || new Date().getFullYear()}`)
 }

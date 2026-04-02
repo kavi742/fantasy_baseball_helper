@@ -51,7 +51,7 @@ PROFILES = {
 
 
 def get_rankings(
-    db: Session, profile: str = "balanced", week_start: date = None
+    db: Session, profile: str = "balanced", week_start: date | None = None
 ) -> dict:
     if profile not in PROFILES:
         profile = "balanced"
@@ -63,6 +63,9 @@ def get_rankings(
         start, end = _current_week_range()
 
     pitchers_data = _collect_pitchers(db, start, end)
+
+    if profile == "closer":
+        pitchers_data = [p for p in pitchers_data if p.get("svh", 0) >= 1]
 
     # if not pitchers_data:
     #     return {"profile": profile, "profiles": _profile_list(), "pitchers": []}
@@ -95,7 +98,6 @@ def get_rankings(
         p["bb_pct"] = bb_pct  # display only
         p["xfip"] = stats.get("xfip")
         p["siera"] = stats.get("siera")
-        # K%-BB%: the scoring stat for the K category
         p["k_minus_bb"] = (
             round(k_pct - bb_pct, 4)
             if (k_pct is not None and bb_pct is not None)
@@ -106,6 +108,9 @@ def get_rankings(
         p["opp_avg"] = opp.get("avg")
         p["opp_ops"] = opp.get("ops")
         p["opp_k_rate"] = opp.get("strikeout_rate")
+
+    if profile == "closer":
+        pitchers_data = [p for p in pitchers_data if p.get("svh", 0) >= 1]
 
     _attach_scores(pitchers_data, profile)
 
