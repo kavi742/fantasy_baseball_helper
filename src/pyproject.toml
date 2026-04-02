@@ -11,4 +11,5 @@ dependencies = [
     "mlb-statsapi==1.7.2",
     "apscheduler==3.10.4",
     "python-dotenv==1.0.1",
+    "pybaseball==2.2.7",
 ]

@@ -5,6 +5,7 @@ import { WeekView } from './components/WeekView'
 import { Rankings } from './pages/Rankings'
 import { useWeek } from './hooks/useWeek'
 import { useFilters } from './hooks/useFilters'
+import { useTheme } from './hooks/useTheme'
 
 const TABS = [
   { id: 'week',     label: 'Week View' },
@@ -13,8 +14,9 @@ const TABS = [
 
 export default function App() {
   const [tab, setTab] = useState('week')
-  const { data, loading, error, weekStart, isCurrentWeek, goToPrevWeek, goToNextWeek, goToCurrentWeek, refresh } = useWeek()
+  const { data, loading, error, isCurrentWeek, goToPrevWeek, goToNextWeek, goToCurrentWeek, refresh } = useWeek()
   const { search, setSearch, selectedDate, setSelectedDate, hideTbd, setHideTbd, filtered, dates } = useFilters(data?.games ?? [])
+  const { themeId, setThemeId } = useTheme()
 
   return (
     <div className="app">
@@ -27,6 +29,8 @@ export default function App() {
         onToday={goToCurrentWeek}
         onRefresh={refresh}
         showWeekNav={tab === 'week'}
+        themeId={themeId}
+        setThemeId={setThemeId}
       />
 
       <nav className="tab-nav">
@@ -67,7 +71,6 @@ export default function App() {
             )}
           </>
         )}
-
         {tab === 'rankings' && <Rankings />}
       </main>
     </div>

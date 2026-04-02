@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { ThemePicker } from './ThemePicker'
 
 function formatWeekRange(startDate, endDate) {
   if (!startDate || !endDate) return ''
@@ -7,7 +8,7 @@ function formatWeekRange(startDate, endDate) {
   return `${fmt(startDate)} – ${fmt(endDate)}, ${endYear}`
 }
 
-export function Header({ data, loading, isCurrentWeek, onPrev, onNext, onToday, onRefresh, showWeekNav = true }) {
+export function Header({ data, loading, isCurrentWeek, onPrev, onNext, onToday, onRefresh, showWeekNav = true, themeId, setThemeId }) {
   return (
     <header className="app-header">
       <div className="header-top">
@@ -18,15 +19,18 @@ export function Header({ data, loading, isCurrentWeek, onPrev, onNext, onToday, 
             <p className="header-subtitle">Fantasy Baseball Week Planner</p>
           </div>
         </div>
-        <button
-          className="btn btn-ghost"
-          onClick={onRefresh}
-          disabled={loading}
-          title="Refresh data"
-        >
-          <RefreshCw size={16} className={loading ? 'spin' : ''} />
-          <span>Refresh</span>
-        </button>
+        <div className="header-actions">
+          <ThemePicker themeId={themeId} setThemeId={setThemeId} />
+          <button
+            className="btn btn-ghost"
+            onClick={onRefresh}
+            disabled={loading}
+            title="Refresh data"
+          >
+            <RefreshCw size={16} className={loading ? 'spin' : ''} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {showWeekNav && (

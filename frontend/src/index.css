@@ -346,3 +346,122 @@ input  { font: inherit; color: inherit; }
   color: var(--text-3);
   font-size: 14px;
 }
+
+.week-toggle {
+  display: flex;
+  gap: 6px;
+  border-left: 1px solid var(--border);
+  padding-left: 12px;
+  margin-left: 6px;
+}
+/* ── Day filter ─────────────────────────────────────────────────────────── */
+.day-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.day-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 20px;
+  border: 1px solid var(--border-mid);
+  color: var(--text-2);
+  background: var(--bg-card);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.day-btn:hover { border-color: var(--accent); color: var(--accent); }
+.day-btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+/* ── Theme picker ────────────────────────────────────────────────────────── */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-picker {
+  position: relative;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.theme-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+.theme-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 100;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  min-width: 220px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.theme-dropdown-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-3);
+  padding: 4px 8px 6px;
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-2);
+  width: 100%;
+  text-align: left;
+  transition: background .1s;
+}
+.theme-option:hover { background: var(--bg-subtle); color: var(--text); }
+.theme-option--active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+
+.theme-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.theme-tag {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-subtle);
+  color: var(--text-3);
+  font-weight: 500;
+}
+.theme-tag--light {
+  background: #fff8e1;
+  color: #b45309;
+}

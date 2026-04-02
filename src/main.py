@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import Base, engine
+from routes.rankings import router as rankings_router
 from routes.schedule import router as schedule_router
 from scheduler import lifespan
 
@@ -13,7 +14,6 @@ logging.basicConfig(
     format="%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
 )
 
-# Create all tables on startup (Alembic handles migrations in production)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -32,3 +32,4 @@ app.add_middleware(
 )
 
 app.include_router(schedule_router)
+app.include_router(rankings_router)
