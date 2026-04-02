@@ -8,11 +8,11 @@ export function useRelievers() {
   const [sortKey, setSortKey] = useState('rank')
   const [sortDir, setSortDir] = useState('asc')
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchRelievers()
+      const result = await fetchRelievers(null, force)
       setData(result)
     } catch (err) {
       setError(err.message)
@@ -49,6 +49,6 @@ export function useRelievers() {
     sortKey,
     sortDir,
     handleSort,
-    refresh: load,
+    refresh: () => load(true),
   }
 }

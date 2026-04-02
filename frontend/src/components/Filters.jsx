@@ -9,6 +9,9 @@ function formatDayTab(dateStr) {
 }
 
 export function Filters({ search, setSearch, selectedDate, setSelectedDate, hideTbd, setHideTbd, dates, totalGames, filteredCount }) {
+  const today = new Date().toISOString().split('T')[0]
+  const hasToday = dates.includes(today)
+
   return (
     <div className="filters">
       <div className="filters-row">
@@ -59,6 +62,14 @@ export function Filters({ search, setSearch, selectedDate, setSelectedDate, hide
           >
             All days
           </button>
+          {hasToday && (
+            <button
+              className={`day-tab ${selectedDate === today ? 'day-tab-active' : ''}`}
+              onClick={() => setSelectedDate(today === selectedDate ? null : today)}
+            >
+              <span className="day-tab-day">Today</span>
+            </button>
+          )}
           {dates.map(date => {
             const { day, date: dateLabel } = formatDayTab(date)
             return (

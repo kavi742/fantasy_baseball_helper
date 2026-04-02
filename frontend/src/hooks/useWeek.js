@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fetchWeek } from '../api/client'
 
+function getTodayISO() {
+  const d = new Date()
+  return d.toISOString().split('T')[0]
+}
+
 function getMondayISO(date = new Date()) {
   const d = new Date(date)
   const day = d.getDay()

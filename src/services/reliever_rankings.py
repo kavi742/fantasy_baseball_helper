@@ -43,6 +43,7 @@ def get_reliever_rankings(season: int | None = None) -> dict:
         b["k_per_9"] = stats.get("k_per_9")
         b["xfip"] = stats.get("xfip")
         b["siera"] = stats.get("siera")
+        b["games_started"] = stats.get("games_started")
         b["k_minus_bb"] = (
             round(b["k_pct"] - b["bb_pct"], 4)
             if (b["k_pct"] is not None and b["bb_pct"] is not None)
@@ -50,7 +51,10 @@ def get_reliever_rankings(season: int | None = None) -> dict:
         )
 
     relievers_with_stats = [
-        b for b in bullpens if (b.get("svh") or 0) > 0 or b.get("k_pct") is not None
+        b
+        for b in bullpens
+        if b.get("games_started", -1) == 0
+        and ((b.get("svh") or 0) > 0 or b.get("k_pct") is not None)
     ]
 
     relievers_with_stats.sort(

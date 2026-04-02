@@ -4,7 +4,8 @@
 :root {
   --bg:          #f8f9fa;
   --bg-card:     #ffffff;
-  --bg-subtle:   #f1f3f5;
+  --bg-elevated: #f1f3f5;
+  --bg-subtle:   #e9ecef;
   --border:      #e9ecef;
   --border-mid:  #ced4da;
   --text:        #212529;
@@ -24,6 +25,7 @@
   :root {
     --bg:          #0f1117;
     --bg-card:     #1a1d27;
+    --bg-elevated: #252836;
     --bg-subtle:   #22263a;
     --border:      #2c3050;
     --border-mid:  #3d4266;
@@ -131,7 +133,12 @@ input  { font: inherit; color: inherit; }
 .game-card-header { display: flex; align-items: center; justify-content: space-between; }
 .matchup { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
 .matchup-at { font-weight: 400; color: var(--text-3); font-size: 13px; }
+.game-meta { display: flex; align-items: center; gap: 8px; }
 .game-time { font-size: 11px; color: var(--text-3); }
+.game-score { font-size: 14px; font-weight: 700; color: var(--text); }
+.game-score-live { color: #2ecc71; }
+.game-inning { font-size: 11px; font-weight: 600; color: #2ecc71; }
+.game-status { font-size: 11px; color: var(--text-3); }
 
 .game-card-teams { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); }
 .team-full { flex: 1; }
@@ -143,6 +150,13 @@ input  { font: inherit; color: inherit; }
 .pitcher-name { font-size: 13px; font-weight: 500; }
 .pitcher-tbd { color: var(--tbd-text); font-style: italic; font-weight: 400; }
 .pitcher-divider { height: 1px; background: var(--border); }
+
+.game-links { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 8px; }
+.game-links a { font-size: 11px; color: var(--accent); text-decoration: none; font-weight: 500; }
+.game-links a:hover { text-decoration: underline; }
+
+.qs-badge { font-size: 9px; font-weight: 700; color: #fff; background: #22c55e; padding: 2px 5px; border-radius: 3px; margin-left: auto; }
+.no-qs-badge { font-size: 9px; font-weight: 600; color: var(--text-3); padding: 2px 5px; margin-left: auto; }
 
 .loading-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 20px; }
 .game-card-skeleton { height: 140px; border-radius: var(--radius); background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--border) 50%, var(--bg-subtle) 75%); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
@@ -213,7 +227,7 @@ input  { font: inherit; color: inherit; }
   background: var(--bg-card);
   transition: all .15s;
 }
-.profile-btn:hover { border-color: var(--accent); color: var(--accent); }
+.profile-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-elevated); }
 .profile-btn--active {
   background: var(--accent);
   border-color: var(--accent);
@@ -375,7 +389,7 @@ input  { font: inherit; color: inherit; }
   transition: all .15s;
   white-space: nowrap;
 }
-.day-btn:hover { border-color: var(--accent); color: var(--accent); }
+.day-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-elevated); }
 .day-btn--active {
   background: var(--accent);
   border-color: var(--accent);

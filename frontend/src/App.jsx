@@ -16,7 +16,7 @@ const TABS = [
 
 export default function App() {
   const [tab, setTab] = useState('week')
-  const { data, loading, error, isCurrentWeek, goToPrevWeek, goToNextWeek, goToCurrentWeek, refresh } = useWeek()
+  const { data, loading, error, isCurrentWeek, goToPrevWeek, goToNextWeek, goToCurrentWeek } = useWeek()
   const { search, setSearch, selectedDate, setSelectedDate, hideTbd, setHideTbd, filtered, dates } = useFilters(data?.games ?? [])
   const { themeId, setThemeId } = useTheme()
 
@@ -24,12 +24,10 @@ export default function App() {
     <div className="app">
       <Header
         data={data}
-        loading={loading && tab === 'week'}
         isCurrentWeek={isCurrentWeek}
         onPrev={goToPrevWeek}
         onNext={goToNextWeek}
         onToday={goToCurrentWeek}
-        onRefresh={refresh}
         showWeekNav={tab === 'week'}
         themeId={themeId}
         setThemeId={setThemeId}

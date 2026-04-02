@@ -171,3 +171,48 @@ def get_all_bullpens(season: int | None = None) -> list[dict]:
                     )
 
     return bullpens
+
+
+def is_quality_start(ip: float | str | None, er: int | str | None) -> bool:
+    """
+    Determine if a pitching performance qualifies as a Quality Start.
+    A QS = 6+ innings pitched with less than 3 earned runs.
+    """
+    if ip is None or er is None:
+        return False
+    try:
+        innings = float(ip)
+        earned_runs = int(er)
+        return innings >= 6 and earned_runs < 3
+    except (ValueError, TypeError):
+        return False
+
+
+def get_game_boxscore(game_id: int) -> dict | None:
+    """
+    Fetch boxscore data for a completed game.
+    Returns dict with pitcher stats keyed by pitcher name.
+    """
+    try:
+        data = statsapi.boxscore_data(game_id)
+        if not data:
+            return None
+
+        pitcher_stats = {}
+        for side in ["away", "home"]:
+            pitchers = data.get(f"{side}Pitchers", [])
+            for p in pitchers:
+                name = p.get("name", "")
+                if not name or name == f"{side.title()} Pitchers":
+                    continue
+                pitcher_stats[name] = {
+                    "ip": p.get("ip"),
+                    "er": p.get("er"),
+                    "k": p.get("k"),
+                    "h": p.get("h"),
+                    "bb": p.get("bb"),
+                }
+        return pitcher_stats
+    except Exception as e:
+        logger.warning(f"Failed to fetch boxscore for game {game_id}: {e}")
+        return None

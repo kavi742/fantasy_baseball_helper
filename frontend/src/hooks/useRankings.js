@@ -9,21 +9,41 @@ function getMondayISO(offsetWeeks = 0) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+function getTodayISO() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function getTomorrowISO() {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().split('T')[0]
+}
+
 export function useRankings() {
   const [profile, setProfile] = useState('balanced')
-  const [week, setWeek] = useState('current')  // 'current' | 'next'
+  const [week, setWeek] = useState('tomorrow')  // 'today' | 'current' | 'next' | 'tomorrow'
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [sortKey, setSortKey] = useState('rank')
   const [sortDir, setSortDir] = useState('asc')
 
-  const load = useCallback(async (p, w) => {
+  const load = useCallback(async (p, w, force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const weekStart = getMondayISO(w === 'next' ? 1 : 0)
-      const result = await fetchRankings(p, weekStart)
+      let weekStart
+      if (w === 'today') {
+        weekStart = getTodayISO()
+      } else if (w === 'tomorrow') {
+        weekStart = getTomorrowISO()
+      } else if (w === 'current') {
+        weekStart = getMondayISO()
+      } else {
+        weekStart = getMondayISO(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
+      }
+      const result = await fetchRankings(p, weekStart, force)
       setData(result)
     } catch (err) {
       setError(err.message)
@@ -66,6 +86,6 @@ export function useRankings() {
     sortKey,
     sortDir,
     handleSort,
-    refresh: () => load(profile, week),
+    refresh: () => load(profile, week, true),
   }
 }

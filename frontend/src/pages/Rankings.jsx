@@ -85,9 +85,20 @@ export function Rankings() {
     return [...seen].sort()
   }, [pitchers])
 
-  // Reset day filter when week changes
+  // Reset day filter when week changes, but auto-select today/tomorrow if selected
   const handleWeekChange = (w) => {
-    setSelectedDay(null)
+    if (w === 'today') {
+      const today = new Date()
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      setSelectedDay(todayStr)
+    } else if (w === 'tomorrow') {
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`
+      setSelectedDay(tomorrowStr)
+    } else {
+      setSelectedDay(null)
+    }
     setWeek(w)
   }
 
@@ -114,6 +125,18 @@ export function Rankings() {
         </div>
 
         <div className="week-toggle">
+          <button
+            className={`profile-btn ${week === 'today' ? 'profile-btn--active' : ''}`}
+            onClick={() => handleWeekChange('today')}
+          >
+            Today
+          </button>
+          <button
+            className={`profile-btn ${week === 'tomorrow' ? 'profile-btn--active' : ''}`}
+            onClick={() => handleWeekChange('tomorrow')}
+          >
+            Tomorrow
+          </button>
           <button
             className={`profile-btn ${week === 'current' ? 'profile-btn--active' : ''}`}
             onClick={() => handleWeekChange('current')}

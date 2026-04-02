@@ -42,11 +42,6 @@ PROFILES = {
         "description": "Ratio stats only — protect ERA and WHIP categories",
         "weights": {"k": 0.10, "era": 0.40, "whip": 0.40, "qs": 0.10, "svh": 0.00},
     },
-    "closer": {
-        "label": "Closer",
-        "description": "Heavy SV+H — stream closers and high-leverage relievers",
-        "weights": {"k": 0.15, "era": 0.15, "whip": 0.15, "qs": 0.05, "svh": 0.50},
-    },
 }
 
 
@@ -63,9 +58,6 @@ def get_rankings(
         start, end = _current_week_range()
 
     pitchers_data = _collect_pitchers(db, start, end)
-
-    if profile == "closer":
-        pitchers_data = [p for p in pitchers_data if p.get("svh", 0) >= 1]
 
     # if not pitchers_data:
     #     return {"profile": profile, "profiles": _profile_list(), "pitchers": []}

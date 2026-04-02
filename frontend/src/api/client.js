@@ -16,10 +16,17 @@ function setCache(key, data) {
   cache.set(key, { data, ts: Date.now() })
 }
 
-async function request(path, cacheKey = null) {
-  if (cacheKey) {
+function clearCacheKey(key) {
+  cache.delete(key)
+}
+
+async function request(path, cacheKey = null, force = false) {
+  if (!force && cacheKey) {
     const cached = getCached(cacheKey)
     if (cached) return cached
+  }
+  if (force && cacheKey) {
+    clearCacheKey(cacheKey)
   }
   const res = await fetch(`${BASE}${path}`)
   if (!res.ok) {
@@ -34,29 +41,33 @@ async function request(path, cacheKey = null) {
 /**
  * Fetch the week's games and probable pitchers.
  * @param {string|null} startDate - ISO date string (YYYY-MM-DD), or null for current week
+ * @param {boolean} force - bypass cache, fetch fresh data
  */
-export function fetchWeek(startDate = null) {
+export function fetchWeek(startDate = null, force = false) {
   const query = startDate ? `?start=${startDate}` : ''
-  return request(`/week${query}`, `week:${startDate || 'current'}`)
+  return request(`/week${query}`, `week:${startDate || 'current'}`, force)
 }
 
 /**
  * Fetch ranked probable pitchers for the current week.
  * @param {string} profile - scoring profile id (balanced, k_focused, era_whip, closer)
+ * @param {string|null} weekStart - week start date
+ * @param {boolean} force - bypass cache, fetch fresh data
  */
-export function fetchRankings(profile = 'balanced', weekStart = null) {
+export function fetchRankings(profile = 'balanced', weekStart = null, force = false) {
   const params = new URLSearchParams({ profile })
   if (weekStart) params.append('week_start', weekStart)
   const cacheKey = `rankings:${profile}:${weekStart || 'current'}`
-  return request(`/rankings?${params}`, cacheKey)
+  return request(`/rankings?${params}`, cacheKey, force)
 }
 
 /**
  * Fetch ranked relievers/bullpen pitchers.
  * @param {number|null} season - season year, or null for current year
+ * @param {boolean} force - bypass cache, fetch fresh data
  */
-export function fetchRelievers(season = null) {
+export function fetchRelievers(season = null, force = false) {
   const params = new URLSearchParams()
   if (season) params.append('season', season)
-  return request(`/relievers?${params}`, `relievers:${season || new Date().getFullYear()}`)
+  return request(`/relievers?${params}`, `relievers:${season || new Date().getFullYear()}`, force)
 }

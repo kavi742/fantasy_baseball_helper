@@ -17,6 +17,12 @@ class GameSchema(BaseModel):
     home_team_abbrev: str
     away_pitcher: PitcherSchema
     home_pitcher: PitcherSchema
+    away_score: int | None
+    home_score: int | None
+    current_inning: int | None
+    inning_state: str | None
+    away_qs: bool | None
+    home_qs: bool | None
 
     model_config = {"from_attributes": True}
 

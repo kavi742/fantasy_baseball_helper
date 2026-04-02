@@ -8,11 +8,14 @@ Flow:
 """
 
 from datetime import date, datetime, timedelta
+import logging
 
 from sqlalchemy.orm import Session
 
-from mlb.client import get_weekly_schedule
+from mlb.client import get_weekly_schedule, is_quality_start, get_game_boxscore
 from models import Game, Pitcher
+
+logger = logging.getLogger(__name__)
 
 
 def get_week_games(db: Session, start_date: date, end_date: date) -> list[dict]:
@@ -74,6 +77,10 @@ def _persist(db: Session, raw_games: list[dict]) -> None:
             home_team=raw["home_team"],
             away_team_abbrev=raw["away_team_abbrev"],
             home_team_abbrev=raw["home_team_abbrev"],
+            away_score=raw.get("away_score"),
+            home_score=raw.get("home_score"),
+            current_inning=raw.get("current_inning"),
+            inning_state=raw.get("inning_state"),
             fetched_at=datetime.utcnow(),
         )
         db.add(game)
@@ -112,6 +119,52 @@ def _serialise(db: Session, start_date: date, end_date: date) -> list[dict]:
     for game in games:
         away_pitcher = next((p for p in game.pitchers if p.side == "away"), None)
         home_pitcher = next((p for p in game.pitchers if p.side == "home"), None)
+
+        def to_int(val):
+            if val is None or val == "":
+                return None
+            try:
+                return int(val)
+            except (ValueError, TypeError):
+                return None
+
+        away_score = to_int(game.away_score)
+        home_score = to_int(game.home_score)
+        current_inning = to_int(game.current_inning)
+
+        away_qs = None
+        home_qs = None
+
+        if away_score is not None and home_score is not None:
+            boxscore = get_game_boxscore(int(game.game_id))
+            if boxscore:
+                away_name = (
+                    away_pitcher.full_name
+                    if away_pitcher and away_pitcher.full_name
+                    else ""
+                )
+                home_name = (
+                    home_pitcher.full_name
+                    if home_pitcher and home_pitcher.full_name
+                    else ""
+                )
+
+                def names_match(pitcher_name, boxscore_name):
+                    if not pitcher_name or not boxscore_name:
+                        return False
+                    pitcher_lower = pitcher_name.lower()
+                    boxscore_lower = boxscore_name.lower()
+                    parts = pitcher_lower.split()
+                    return any(
+                        part in boxscore_lower for part in parts if len(part) > 3
+                    )
+
+                for name, stats in boxscore.items():
+                    if names_match(away_name, name):
+                        away_qs = is_quality_start(stats.get("ip"), stats.get("er"))
+                    if names_match(home_name, name):
+                        home_qs = is_quality_start(stats.get("ip"), stats.get("er"))
+
         result.append(
             {
                 "game_id": game.game_id,
@@ -124,6 +177,12 @@ def _serialise(db: Session, start_date: date, end_date: date) -> list[dict]:
                 "home_team_abbrev": game.home_team_abbrev,
                 "away_pitcher": _pitcher_dict(away_pitcher),
                 "home_pitcher": _pitcher_dict(home_pitcher),
+                "away_score": away_score,
+                "home_score": home_score,
+                "current_inning": current_inning,
+                "inning_state": game.inning_state if game.inning_state else None,
+                "away_qs": away_qs,
+                "home_qs": home_qs,
             }
         )
     return result
