@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { Header } from './components/Header'
 import { Filters } from './components/Filters'
@@ -9,6 +9,7 @@ import { GameDetail } from './pages/GameDetail'
 import { useWeek } from './hooks/useWeek'
 import { useFilters } from './hooks/useFilters'
 import { useTheme } from './hooks/useTheme'
+import { fetchWeek, fetchRankings, fetchRelievers } from './api/client'
 
 const TABS = [
   { id: 'week',       label: 'Week View' },
@@ -25,6 +26,14 @@ function AppContent() {
   const { themeId, setThemeId } = useTheme()
 
   const isGameDetail = location.pathname.startsWith('/game/')
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      fetchWeek()
+      fetchRankings('balanced')
+      fetchRelievers()
+    }
+  }, [])
 
   const handleTabClick = (tabId) => {
     setTab(tabId)

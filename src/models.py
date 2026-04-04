@@ -10,7 +10,7 @@ class Game(Base):
     __tablename__ = "games"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    game_id: Mapped[str] = mapped_column(String, unique=True, index=True)  # MLB game pk
+    game_id: Mapped[str] = mapped_column(String, unique=True, index=True)
     game_date: Mapped[str] = mapped_column(Date, index=True)
     away_team: Mapped[str] = mapped_column(String)
     home_team: Mapped[str] = mapped_column(String)
@@ -34,12 +34,18 @@ class Pitcher(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     game_id: Mapped[int] = mapped_column(Integer, ForeignKey("games.id"))
-    side: Mapped[str] = mapped_column(String)  # "home" or "away"
-    player_id: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )  # MLB player pk
-    full_name: Mapped[str | None] = mapped_column(String, nullable=True)  # None = TBD
-    hand: Mapped[str | None] = mapped_column(String, nullable=True)  # L / R — Phase 2
-    era: Mapped[str | None] = mapped_column(String, nullable=True)  # Phase 2
+    side: Mapped[str] = mapped_column(String)
+    player_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    full_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    hand: Mapped[str | None] = mapped_column(String, nullable=True)
 
     game: Mapped["Game"] = relationship("Game", back_populates="pitchers")
+
+
+class PitcherHand(Base):
+    __tablename__ = "pitcher_hands"
+
+    player_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    full_name: Mapped[str] = mapped_column(String)
+    hand: Mapped[str | None] = mapped_column(String, nullable=True)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

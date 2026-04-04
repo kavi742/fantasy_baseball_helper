@@ -129,7 +129,7 @@ _TEAM_ID_MAP = {
 }
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=32)
 def get_team_roster(team_id: int, season: int) -> list[dict]:
     """
     Fetch the active roster for a team.
@@ -145,14 +145,11 @@ def get_team_roster(team_id: int, season: int) -> list[dict]:
         return []
 
 
-def get_all_bullpens(season: int | None = None) -> list[dict]:
+@lru_cache(maxsize=4)
+def _get_all_bullpens_cached(season: int) -> list[dict]:
     """
-    Fetch all bullpen pitchers from all MLB teams.
-    Returns list of dicts with: player_id, name, team_abbrev, position.
+    Internal cached bullpen fetcher. Returns list of dicts.
     """
-    if season is None:
-        season = date.today().year
-
     bullpens = []
     for team_id, abbrev in _TEAM_ID_MAP.items():
         roster = get_team_roster(team_id, season)
@@ -175,6 +172,18 @@ def get_all_bullpens(season: int | None = None) -> list[dict]:
                     )
 
     return bullpens
+
+
+def get_all_bullpens(season: int | None = None) -> list[dict]:
+    """
+    Fetch all bullpen pitchers from all MLB teams.
+    Returns list of dicts with: player_id, name, team_abbrev, position.
+    """
+    if season is None:
+        season = date.today().year
+
+    cached = _get_all_bullpens_cached(season)
+    return [dict(d) for d in cached]
 
 
 @lru_cache(maxsize=500)
@@ -215,6 +224,245 @@ def get_pitcher_hand_by_name(name: str) -> str | None:
     except Exception as e:
         logger.warning(f"Failed to look up hand for pitcher {name}: {e}")
     return None
+
+
+def _lookup_player_id(name: str) -> int | None:
+    """Look up a player's MLB ID by name using pybaseball (faster than statsapi)."""
+    try:
+        import pybaseball
+
+        pybaseball.cache.enable()
+        parts = name.split()
+        if len(parts) >= 2:
+            last, first = parts[-1], " ".join(parts[:-1])
+            lookup = pybaseball.playerid_lookup(last, first)
+            if lookup is not None and not lookup.empty:
+                return int(lookup.iloc[0]["key_mlbam"])
+    except Exception:
+        pass
+    try:
+        players = statsapi.lookup_player(name)
+        if players:
+            return players[0].get("id")
+    except Exception:
+        pass
+    return None
+
+
+def get_pitcher_hands_batch(
+    names: list[str], db_session=None, name_to_id: dict[str, int] | None = None
+) -> dict[str, str | None]:
+    """
+    Batch fetch pitcher hands for multiple names.
+    Returns dict mapping name -> hand ('L', 'R', or None).
+    Uses pybaseball for fast ID lookups, then bulk MLB API for hands.
+    If name_to_id is provided, skips the pybaseball lookup (use when player IDs are already known).
+    If db_session is provided, results are cached to the pitcher_hands table.
+    """
+    from models import PitcherHand
+
+    result = {}
+    names_to_fetch = []
+    resolved_ids = name_to_id or {}
+    db_hands = {}
+
+    if db_session and resolved_ids:
+        try:
+            existing = (
+                db_session.query(PitcherHand)
+                .filter(PitcherHand.player_id.in_(list(resolved_ids.values())))
+                .all()
+            )
+            for ph in existing:
+                if ph.hand:
+                    db_hands[ph.player_id] = ph.hand
+        except Exception as e:
+            logger.warning(f"Failed to check DB for pitcher hands: {e}")
+
+    for name in names:
+        if not name or name == "TBD":
+            result[name] = None
+            continue
+
+        pid = resolved_ids.get(name)
+        if pid and pid in db_hands:
+            result[name] = db_hands[pid]
+            continue
+
+        names_to_fetch.append(name)
+
+    if not names_to_fetch:
+        return result
+
+    needed_ids = []
+    for name in names_to_fetch:
+        pid = resolved_ids.get(name)
+        if pid:
+            needed_ids.append(pid)
+
+    if needed_ids:
+        try:
+            id_str = ",".join(map(str, needed_ids))
+            people_data = statsapi.get("people", {"personIds": id_str})
+            people = people_data.get("people", []) if people_data else []
+
+            id_to_hand = {}
+            id_to_name = {}
+            for person in people:
+                pitch_hand = person.get("pitchHand", {})
+                hand = pitch_hand.get("code") if pitch_hand else None
+                pid = person.get("id")
+                id_to_hand[pid] = hand
+                id_to_name[pid] = person.get("fullName")
+
+            for name in names_to_fetch:
+                pid = resolved_ids.get(name)
+                hand = id_to_hand.get(pid) if pid else None
+                result[name] = hand
+                if hand:
+                    get_pitcher_hand_by_name(name)
+
+            if db_session:
+                for pid, hand in id_to_hand.items():
+                    if hand:
+                        try:
+                            existing = (
+                                db_session.query(PitcherHand)
+                                .filter(PitcherHand.player_id == pid)
+                                .first()
+                            )
+                            if not existing:
+                                db_session.add(
+                                    PitcherHand(
+                                        player_id=pid,
+                                        full_name=id_to_name.get(pid, ""),
+                                        hand=hand,
+                                    )
+                                )
+                            elif not existing.hand:
+                                existing.hand = hand
+                                existing.full_name = id_to_name.get(pid, existing.full_name)
+                            db_session.commit()
+                        except Exception as e:
+                            logger.warning(f"Failed to save pitcher hand to DB: {e}")
+                            db_session.rollback()
+
+        except Exception as e:
+            logger.warning(f"Failed to batch fetch pitcher hands: {e}")
+
+    return result
+
+    if not resolved_ids:
+        for name in names_to_lookup:
+            pid = _lookup_player_id(name)
+            if pid:
+                resolved_ids[name] = pid
+
+    needed_ids = [resolved_ids[name] for name in names_to_lookup if name in resolved_ids]
+    if needed_ids:
+        id_to_hand = {}
+        id_to_name = {}
+
+        try:
+            id_str = ",".join(map(str, needed_ids))
+            people_data = statsapi.get("people", {"personIds": id_str})
+            people = people_data.get("people", []) if people_data else []
+
+            for person in people:
+                pitch_hand = person.get("pitchHand", {})
+                hand = pitch_hand.get("code") if pitch_hand else None
+                pid = person.get("id")
+                id_to_hand[pid] = hand
+                id_to_name[pid] = person.get("fullName")
+
+            for name in names_to_lookup:
+                pid = resolved_ids.get(name)
+                if pid:
+                    hand = id_to_hand.get(pid)
+                    result[name] = hand
+                    if hand:
+                        get_pitcher_hand_by_name(name)
+                        hands_to_save[pid] = (hand, id_to_name.get(pid, name))
+
+        except Exception as e:
+            logger.warning(f"Failed to batch fetch pitcher hands: {e}")
+
+    if db_session and hands_to_save:
+        try:
+            for pid, (hand, full_name) in hands_to_save.items():
+                existing = (
+                    db_session.query(PitcherHand).filter(PitcherHand.player_id == pid).first()
+                )
+                if not existing:
+                    db_session.add(
+                        PitcherHand(
+                            player_id=pid,
+                            full_name=full_name,
+                            hand=hand,
+                        )
+                    )
+                elif not existing.hand:
+                    existing.hand = hand
+                    existing.full_name = full_name
+            db_session.commit()
+        except Exception as e:
+            logger.warning(f"Failed to save pitcher hands to DB: {e}")
+            db_session.rollback()
+
+    return result
+
+    needed_ids = [name_to_id[name] for name in names_to_lookup if name in name_to_id]
+    if needed_ids:
+        id_to_hand = {}
+        id_to_name = {}
+
+        try:
+            id_str = ",".join(map(str, needed_ids))
+            people_data = statsapi.get("people", {"personIds": id_str})
+            people = people_data.get("people", []) if people_data else []
+
+            for person in people:
+                pitch_hand = person.get("pitchHand", {})
+                hand = pitch_hand.get("code") if pitch_hand else None
+                pid = person.get("id")
+                id_to_hand[pid] = hand
+                id_to_name[pid] = person.get("fullName")
+
+            for name in names_to_lookup:
+                pid = name_to_id.get(name)
+                if pid:
+                    hand = id_to_hand.get(pid)
+                    result[name] = hand
+                    if hand:
+                        get_pitcher_hand_by_name(name)
+                        hands_to_save[pid] = (hand, id_to_name.get(pid, name))
+
+        except Exception as e:
+            logger.warning(f"Failed to batch fetch pitcher hands: {e}")
+
+    if db_session and hands_to_save:
+        try:
+            for pid, (hand, full_name) in hands_to_save.items():
+                existing = (
+                    db_session.query(PitcherHand).filter(PitcherHand.player_id == pid).first()
+                )
+                if not existing:
+                    db_session.add(
+                        PitcherHand(
+                            player_id=pid,
+                            full_name=full_name,
+                            hand=hand,
+                        )
+                    )
+                elif not existing.hand:
+                    existing.hand = hand
+                    existing.full_name = full_name
+            db_session.commit()
+        except Exception as e:
+            logger.warning(f"Failed to save pitcher hands to DB: {e}")
+            db_session.rollback()
+
+    return result
 
 
 def is_quality_start(ip: float | str | None, er: int | str | None) -> bool:

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fetchRelievers } from '../api/client'
 
-export function useRelievers() {
+export function useRelievers(period = 'season') {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -12,14 +12,14 @@ export function useRelievers() {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchRelievers(null, force)
+      const result = await fetchRelievers(null, period, force)
       setData(result)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [period])
 
   useEffect(() => {
     load()
@@ -50,5 +50,6 @@ export function useRelievers() {
     sortDir,
     handleSort,
     refresh: () => load(true),
+    period: data?.period || period,
   }
 }

@@ -235,12 +235,26 @@ input  { font: inherit; color: inherit; }
   color: var(--text-2);
   background: var(--bg-card);
   transition: all .15s;
+  cursor: pointer;
 }
 .profile-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-elevated); }
 .profile-btn--active {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+
+.period-selector {
+  display: flex;
+  gap: 4px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
+.period-selector .profile-btn {
+  padding: 4px 10px;
+  font-size: 11px;
 }
 
 /* ── Rankings table ─────────────────────────────────────────────────────── */

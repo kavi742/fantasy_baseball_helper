@@ -30,5 +30,7 @@ def list_profiles():
 @router.get("/api/relievers")
 def get_reliever_rankings(
     season: int = Query(default=None),
+    period: str = Query(default="season", pattern="^(season|this_week|last_week)$"),
+    db: Session = Depends(get_db),
 ):
-    return fetch_reliever_rankings(season)
+    return fetch_reliever_rankings(db, season, period)

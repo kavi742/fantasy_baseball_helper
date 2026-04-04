@@ -3,6 +3,12 @@ import { useRelievers } from '../hooks/useRelievers'
 import { useColumnResize } from '../hooks/useColumnResize'
 import { RefreshCw, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 
+const PERIODS = [
+  { key: 'season', label: 'Season' },
+  { key: 'this_week', label: 'This Week' },
+  { key: 'last_week', label: 'Last Week' },
+]
+
 const COLUMNS = [
   { key: 'rank',          label: '#',       title: 'Rank',            defaultWidth: 40 },
   { key: 'team_abbrev',   label: 'Team',    title: 'Team',            defaultWidth: 60 },
@@ -42,11 +48,12 @@ function SortIcon({ colKey, sortKey, sortDir }) {
 }
 
 export function RelieverRankings() {
+  const [period, setPeriod] = useState('season')
   const {
     pitchers, loading, error,
     sortKey, sortDir, handleSort,
     refresh,
-  } = useRelievers()
+  } = useRelievers(period)
 
   const { getWidth, startResize, resetWidth } = useColumnResize(
     COLUMNS.map(c => c.key),
@@ -60,6 +67,17 @@ export function RelieverRankings() {
       <div className="rankings-toolbar">
         <div className="rankings-profiles">
           <span className="profile-btn profile-btn--active">Bullpen Rankings</span>
+          <div className="period-selector">
+            {PERIODS.map(p => (
+              <button
+                key={p.key}
+                className={`profile-btn ${period === p.key ? 'profile-btn--active' : ''}`}
+                onClick={() => setPeriod(p.key)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
         <button className="btn btn-ghost" onClick={refresh} disabled={loading} title="Refresh">
           <RefreshCw size={15} className={loading ? 'spin' : ''} />

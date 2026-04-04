@@ -64,12 +64,13 @@ export function fetchRankings(profile = 'balanced', weekStart = null, force = fa
 /**
  * Fetch ranked relievers/bullpen pitchers.
  * @param {number|null} season - season year, or null for current year
+ * @param {string} period - "season", "this_week", or "last_week"
  * @param {boolean} force - bypass cache, fetch fresh data
  */
-export function fetchRelievers(season = null, force = false) {
-  const params = new URLSearchParams()
+export function fetchRelievers(season = null, period = 'season', force = false) {
+  const params = new URLSearchParams({ period })
   if (season) params.append('season', season)
-  return request(`/relievers?${params}`, `relievers:${season || new Date().getFullYear()}`, force)
+  return request(`/relievers?${params}`, `relievers:${season || new Date().getFullYear()}:${period}`, force)
 }
 
 /**

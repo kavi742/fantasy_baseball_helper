@@ -556,6 +556,18 @@ The MLB Stats API has several performance considerations that must be addressed:
 - Each lookup takes ~400ms, and a week can have 149+ unique pitchers
 - **Solution:** Store pitcher hands in the database during the persist phase. The `Pitcher` model has a `hand` field specifically for this. `_pitcher_dict()` reads from DB, not API.
 
+**Batch Hand Lookups for Relievers**
+- The reliever rankings page needs hands for ~573 active relievers
+- Original implementation took ~228 seconds (3+ minutes) due to slow pybaseball lookups
+- **Solution:** 
+  1. `get_pitcher_hands_batch()` now accepts pre-resolved `player_id` mapping to skip pybaseball lookups
+  2. Check DB first before calling individual API lookups
+  3. `get_all_bullpens()` is now cached with `@lru_cache`
+  4. Team roster lookups cached with larger `maxsize=32`
+- First load: ~5s (30 team rosters + FanGraphs stats + batch hand API)
+- Subsequent loads: ~235ms (all caches warm)
+- The `PitcherHand` model stores `player_id`, `full_name`, `hand`, and `fetched_at`
+
 **Boxscore Lookups for Quality Starts**
 - Calculating QS requires boxscore data for completed games
 - 92 games × ~130ms each = ~12s if done naively
@@ -593,6 +605,39 @@ After a backend restart, the first load is slow (~15s) because:
 2. Boxscores for completed games must be cached
 
 This is unavoidable. Subsequent loads are ~20ms from database cache.
+
+**Reliever Rankings Optimization:**
+- The `/api/relievers` endpoint now passes a DB session to `get_pitcher_hands_batch()`
+- Results are persisted to the `pitcher_hands` table
+- After first load, reliever rankings load in ~5ms (vs ~167s without caching)
+
+### 11.5 Reliever Rankings Performance Optimization
+
+**Problem:** Reliever rankings page was taking 3+ minutes to load due to slow pitcher hand lookups.
+
+**Root Causes:**
+- `get_pitcher_hand_by_name()` takes 326ms per cache miss
+- 573 relievers × 326ms = 187 seconds just for hand lookups
+- `get_all_bullpens()` was not cached, requiring 30 team roster API calls each time
+- Original `get_pitcher_hands_batch()` checked LRU cache before DB, causing unnecessary API calls
+
+**Solution - Changes Made:**
+
+1. **`get_pitcher_hands_batch()`** - Refactored to:
+   - Accept pre-resolved player IDs to skip pybaseball lookups
+   - Check DB first before LRU cache (avoids 326ms API calls for cached data)
+   - Only batch-fetch hands not in DB
+
+2. **`get_all_bullpens()`** - Added `@lru_cache` wrapper to cache bullpen results
+
+3. **`get_team_roster()`** - Increased cache size from 1 to 32 (covers all MLB teams)
+
+4. **`reliever_rankings.py`** - Updated to pass `name_to_id` mapping to batch function
+
+**Performance Results:**
+- First load: ~5 seconds (30 team rosters + FanGraphs stats + batch hand API)
+- Subsequent loads: ~235ms (all caches warm)
+- Before optimization: ~228 seconds (3+ minutes)
 
 ### 11.5 Frontend Caching
 

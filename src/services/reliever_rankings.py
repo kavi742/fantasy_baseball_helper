@@ -3,23 +3,33 @@ Reliever rankings service.
 
 Flow:
   1. Fetch all bullpen pitchers from all MLB teams via mlb client
-  2. Fetch season stats for each reliever via pybaseball (FanGraphs)
-  3. Rank by SV+H (saves + holds), with secondary sorting by K%, ERA, WHIP
+  2. Fetch stats for each reliever via pybaseball (FanGraphs)
+     - "season": full season stats
+     - "this_week": stats from Monday of current week
+     - "last_week": stats from Monday of last week
+  3. Batch fetch pitcher hands for all relievers (with DB caching)
+  4. Rank by SV+H (saves + holds), with secondary sorting by K%, ERA, WHIP
 """
 
 import logging
 from datetime import date
 
-from mlb.client import get_all_bullpens, get_pitcher_hand_by_name
+from mlb.client import get_all_bullpens, get_pitcher_hands_batch
 from mlb.stats import get_pitcher_stats
 
 logger = logging.getLogger(__name__)
 
 
-def get_reliever_rankings(season: int | None = None) -> dict:
+def get_reliever_rankings(
+    db_session=None, season: int | None = None, period: str = "season"
+) -> dict:
     """
     Fetch and rank all active bullpen pitchers.
-    Returns dict with list of ranked relievers.
+
+    Args:
+        db_session: Database session for caching pitcher hands
+        season: MLB season year (defaults to current year)
+        period: "season", "this_week", or "last_week"
     """
     if season is None:
         season = date.today().year
@@ -27,7 +37,12 @@ def get_reliever_rankings(season: int | None = None) -> dict:
     bullpens = get_all_bullpens(season)
 
     player_names = [b["name"] for b in bullpens if b.get("name")]
-    pitcher_stats = get_pitcher_stats(player_names) if player_names else {}
+    pitcher_stats = get_pitcher_stats(player_names, period) if player_names else {}
+
+    name_to_id = {
+        b["name"]: b["player_id"] for b in bullpens if b.get("name") and b.get("player_id")
+    }
+    hands = get_pitcher_hands_batch(player_names, db_session, name_to_id)
 
     for b in bullpens:
         stats = pitcher_stats.get(b["name"], {})
@@ -41,15 +56,14 @@ def get_reliever_rankings(season: int | None = None) -> dict:
         b["k_pct"] = stats.get("k_pct")
         b["bb_pct"] = stats.get("bb_pct")
         b["k_per_9"] = stats.get("k_per_9")
-        b["xfip"] = stats.get("xfip")
-        b["siera"] = stats.get("siera")
         b["games_started"] = stats.get("games_started")
-        b["hand"] = get_pitcher_hand_by_name(b["name"]) if b.get("name") else None
+        b["hand"] = hands.get(b["name"]) if b.get("name") else None
         b["k_minus_bb"] = (
             round(b["k_pct"] - b["bb_pct"], 4)
             if (b["k_pct"] is not None and b["bb_pct"] is not None)
             else None
         )
+        b["period"] = period
 
     relievers_with_stats = [
         b
@@ -70,4 +84,4 @@ def get_reliever_rankings(season: int | None = None) -> dict:
     for i, r in enumerate(relievers_with_stats):
         r["rank"] = i + 1
 
-    return {"pitchers": relievers_with_stats}
+    return {"pitchers": relievers_with_stats, "period": period}
