@@ -54,18 +54,26 @@ A Python web application that surfaces probable starting pitchers for the upcomi
 - Node.js 18+
 - [UV](https://github.com/astral-sh/uv) (Python package manager)
 
-### Backend Setup (with UV)
-
-The backend uses `pyproject.toml` for dependencies. UV reads this automatically.
+### Backend Setup
 
 ```bash
 cd src
 uv sync
 cp .env.example .env
-uv run uvicorn main:app --reload
+uv run app
 ```
 
 The API runs at `http://localhost:8000` with docs at `http://localhost:8000/docs`
+
+### Dev Commands
+
+```bash
+cd src
+uv run ruff check .        # Lint
+uv run ruff format .       # Format
+uv run mypy .              # Type check
+uv run pytest              # Tests
+```
 
 ### Frontend Setup
 

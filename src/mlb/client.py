@@ -81,6 +81,10 @@ def _normalise(game: dict) -> dict:
         "away_pitcher_name": game.get("away_probable_pitcher", None),
         "home_pitcher_id": game.get("home_probable_pitcher_id", None),
         "home_pitcher_name": game.get("home_probable_pitcher", None),
+        "away_score": game.get("away_score"),
+        "home_score": game.get("home_score"),
+        "current_inning": game.get("current_inning"),
+        "inning_state": game.get("inning_state"),
     }
 
 
