@@ -22,7 +22,7 @@ function getTomorrowISO() {
 
 export function useRankings() {
   const [profile, setProfile] = useState('balanced')
-  const [week, setWeek] = useState('tomorrow')  // 'today' | 'current' | 'next' | 'tomorrow'
+  const [week, setWeek] = useState('today')  // 'today' | 'current' | 'next' | 'tomorrow'
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
