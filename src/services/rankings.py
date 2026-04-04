@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from mlb.client import get_pitcher_hand_by_name
 from mlb.stats import get_pitcher_stats, get_team_batting_stats
-from models import Game, Pitcher
+from models import Game
 
 logger = logging.getLogger(__name__)
 

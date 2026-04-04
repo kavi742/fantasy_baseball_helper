@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import Base, engine
+from routes.game_detail import router as game_detail_router
 from routes.rankings import router as rankings_router
 from routes.schedule import router as schedule_router
 from scheduler import lifespan
@@ -33,3 +34,4 @@ app.add_middleware(
 
 app.include_router(schedule_router)
 app.include_router(rankings_router)
+app.include_router(game_detail_router)

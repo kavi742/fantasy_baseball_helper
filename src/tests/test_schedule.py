@@ -1,4 +1,3 @@
-import pytest
 
 
 class TestScheduleService:
@@ -6,7 +5,6 @@ class TestScheduleService:
 
     def test_to_int_conversion(self):
         """Test the to_int helper handles various inputs"""
-        from services.schedule import _serialise
 
         # This tests the helper function behavior
         # We can't directly test _serialise without a DB, but we can verify the function exists

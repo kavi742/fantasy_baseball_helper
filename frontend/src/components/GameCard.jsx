@@ -23,6 +23,8 @@ function formatTime(gameTime) {
   }
 }
 
+import { Link } from 'react-router-dom'
+
 function GameLinks({ gameId }) {
   const mlbUrl = `https://www.mlb.com/gameday/${gameId}/final/box`
   const savantUrl = `https://baseballsavant.mlb.com/gamefeed?gamePk=${gameId}`
@@ -30,6 +32,7 @@ function GameLinks({ gameId }) {
 
   return (
     <div className="game-links">
+      <Link to={`/game/${gameId}`} title="Matchup Splits">Splits</Link>
       <a href={mlbUrl} target="_blank" rel="noopener noreferrer" title="MLB.com Boxscore">MLB</a>
       <a href={savantUrl} target="_blank" rel="noopener noreferrer" title="Baseball Savant">Savant</a>
       <a href={fgUrl} target="_blank" rel="noopener noreferrer" title="FanGraphs">FG</a>

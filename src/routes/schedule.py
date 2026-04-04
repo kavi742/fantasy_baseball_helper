@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from schemas import WeekResponse, GameSchema
+from schemas import GameSchema, WeekResponse
 from services.schedule import get_week_games
 
 router = APIRouter(prefix="/api", tags=["schedule"])
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api", tags=["schedule"])
 
 @router.get("/week", response_model=WeekResponse)
 def get_week(
-    start: date | None = Query(default=None, description="Week start date (YYYY-MM-DD). Defaults to current Monday."),
+    start: date | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """

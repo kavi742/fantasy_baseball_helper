@@ -71,16 +71,16 @@ def _normalise(game: dict) -> dict:
     return {
         "game_id": str(game.get("game_id", "")),
         "game_date": game.get("game_date", ""),
-        "game_time": game.get("game_datetime", None),
-        "status": game.get("status", None),
+        "game_time": game.get("game_datetime"),
+        "status": game.get("status"),
         "away_team": away,
         "home_team": home,
         "away_team_abbrev": _abbrev(away),
         "home_team_abbrev": _abbrev(home),
-        "away_pitcher_id": game.get("away_probable_pitcher_id", None),
-        "away_pitcher_name": game.get("away_probable_pitcher", None),
-        "home_pitcher_id": game.get("home_probable_pitcher_id", None),
-        "home_pitcher_name": game.get("home_probable_pitcher", None),
+        "away_pitcher_id": game.get("away_probable_pitcher_id"),
+        "away_pitcher_name": game.get("away_probable_pitcher"),
+        "home_pitcher_id": game.get("home_probable_pitcher_id"),
+        "home_pitcher_name": game.get("home_probable_pitcher"),
         "away_score": game.get("away_score"),
         "home_score": game.get("home_score"),
         "current_inning": game.get("current_inning"),
@@ -232,6 +232,7 @@ def is_quality_start(ip: float | str | None, er: int | str | None) -> bool:
         return False
 
 
+@lru_cache(maxsize=100)
 def get_game_boxscore(game_id: int) -> dict | None:
     """
     Fetch boxscore data for a completed game.

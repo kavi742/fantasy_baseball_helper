@@ -148,6 +148,18 @@ The project is split into six phases. Each phase delivers a standalone, usable i
 
 ### Phase 1 — MVP: Probable Pitchers View
 
+**Fantasy Roster Integration (Future Enhancement)**
+
+Once Yahoo Fantasy integration is implemented (Phase 3), the Week View gains a powerful personalization layer:
+
+- **Roster awareness** — After authenticating with Yahoo Fantasy, the app fetches the user's current roster
+- **Game highlighting** — Any game featuring a player from the user's roster is highlighted with a distinct border or background color
+- **Ownership indicator** — A small badge or icon on the game card indicates which players from the roster are in that game (e.g., "Your P: Shohei Ohtani")
+- **Start/Sit helper** — Games where the user has a pitcher starting are flagged as "Your SP" to make it easy to scan for decisions
+- **Multi-league support** — For users in multiple leagues, allow league selection to switch which roster is highlighted
+
+This transforms the Week View from a generic schedule into a personalized decision dashboard.
+
 **Goal:** Show all MLB games for the current fantasy week with probable starters, updated daily.
 
 **Data flow:**
@@ -167,6 +179,20 @@ GET /api/week → { date, away_team, home_team, away_pitcher, home_pitcher }
 ---
 
 ### Phase 2 — Platoon Advantage Analysis
+
+**Reliever Workload Tracking (Reliever Rankings Enhancement)**
+
+When viewing relievers in the rankings, each reliever's recent workload should be tracked to estimate availability:
+
+- **Recent appearance tracking** — Query the MLB API boxscore for the past 2-3 days to find which relievers pitched and when
+- **Appearance marker** — Display an indicator (e.g., colored dot or "Pitched Yesterday" badge) showing recent usage:
+  - Green dot = pitched 3+ days ago (fresh)
+  - Yellow dot = pitched 1-2 days ago (likely available but monitor)
+  - Red dot = pitched today/yesterday (likely unavailable)
+- **Inherited runners** — Boxscore data also shows if a reliever left with runners on, indicating potential for hold/win credit
+- **Rest days indicator** — Help fantasy managers identify relievers who are "on rest" and unlikely to pitch tonight
+
+This data helps managers avoid starting a reliever whose team played yesterday and may have burned through their best arms.
 
 **Goal:** Surface which batters on a user's roster have a handedness advantage against that day's probable pitcher.
 
@@ -513,3 +539,75 @@ The following tasks represent the immediate path to a working Phase 1 prototype:
 ---
 
 > **When Phase 1 is stable:** Begin Phase 2.5 (Pitcher Rankings) next — this delivers immediate fantasy value without requiring Yahoo OAuth. Phase 2 (platoon advantage analysis) follows, then Phase 3 (add/drop recommendations + Yahoo integration).
+
+---
+
+## 11. Technical Notes & Performance Considerations
+
+This section captures important technical decisions and performance optimizations that should not be forgotten.
+
+### 11.1 MLB API Performance Bottlenecks
+
+The MLB Stats API has several performance considerations that must be addressed:
+
+**Pitcher Handedness Lookups**
+- The MLB schedule API returns pitcher names but NOT pitcher IDs
+- Looking up hands requires two API calls per pitcher: `lookup_player()` → `get("people", {"personIds": id})`
+- Each lookup takes ~400ms, and a week can have 149+ unique pitchers
+- **Solution:** Store pitcher hands in the database during the persist phase. The `Pitcher` model has a `hand` field specifically for this. `_pitcher_dict()` reads from DB, not API.
+
+**Boxscore Lookups for Quality Starts**
+- Calculating QS requires boxscore data for completed games
+- 92 games × ~130ms each = ~12s if done naively
+- **Solution:** Added `@lru_cache(maxsize=100)` to `get_game_boxscore()` in `mlb/client.py`. Caches results for repeated requests.
+
+**Season Stats for Game Detail Page**
+- The `/stats` endpoint with `playerIds` parameter returns **team-level** stats, not individual player stats
+- **Solution:** Use the `/people/{id}/stats` endpoint which correctly returns each player's individual stats.
+
+**Batter Splits**
+- The MLB API `statSplits` endpoint is unreliable (500 errors)
+- **Solution:** Use `/people/{id}/stats` with `sitCodes=vl,vr` parameters for handedness splits (vs LHP / vs RHP)
+
+### 11.2 Database Schema for Performance
+
+The `Pitcher` model stores:
+```python
+hand: Mapped[str | None]  # L / R — pre-fetched during persist
+```
+
+This prevents repeated API calls for every request. The `hand` field is populated in `_persist()` in `services/schedule.py`.
+
+### 11.3 Caching Strategy
+
+| Cache | Location | TTL | Purpose |
+|-------|----------|-----|---------|
+| In-memory | Python `lru_cache` | Process lifetime | `get_pitcher_hand()`, `get_game_boxscore()` |
+| Database | SQLite/Postgres | Until next daily refresh | Pitcher data, game schedule |
+| Frontend | React state + localStorage | 5 minutes | API responses |
+
+### 11.4 First Load Performance
+
+After a backend restart, the first load is slow (~15s) because:
+1. All pitcher hands must be fetched from MLB API
+2. Boxscores for completed games must be cached
+
+This is unavoidable. Subsequent loads are ~20ms from database cache.
+
+### 11.5 Frontend Caching
+
+The React API client (`frontend/src/api/client.js`) uses a Map-based cache with 5-minute TTL:
+- `fetchWeek()`, `fetchRankings()`, `fetchRelievers()`, `fetchGame()` all use caching
+- `clearCache()` function available for force refresh
+
+### 11.6 Color Scheme
+
+CSS variables are used for theme support (light/dark mode):
+```css
+--highlight-bg:       /* Cell background for highlighted columns */
+--highlight-header-bg: /* Header background for active splits */
+--highlight-row-bg:   /* Row background for favorable matchups */
+--highlight-text:     /* Text color for highlighted elements */
+```
+
+All components (Game Detail, Rankings) use these variables for consistent theming.

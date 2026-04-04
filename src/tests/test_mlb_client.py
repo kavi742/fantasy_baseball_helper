@@ -1,4 +1,3 @@
-import pytest
 from mlb.client import is_quality_start
 
 

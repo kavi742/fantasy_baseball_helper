@@ -7,16 +7,16 @@ Flow:
   3. If stale or missing, fetch from MLB API, persist, return
 """
 
-from datetime import date, datetime, timedelta
 import logging
+from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
 from mlb.client import (
-    get_weekly_schedule,
-    is_quality_start,
     get_game_boxscore,
     get_pitcher_hand_by_name,
+    get_weekly_schedule,
+    is_quality_start,
 )
 from models import Game, Pitcher
 
@@ -73,6 +73,17 @@ def _persist(db: Session, raw_games: list[dict]) -> None:
             db.delete(existing)
             db.flush()
 
+        away_name = raw.get("away_pitcher_name")
+        home_name = raw.get("home_pitcher_name")
+
+        away_hand = None
+        home_hand = None
+
+        if away_name and away_name != "TBD":
+            away_hand = get_pitcher_hand_by_name(away_name)
+        if home_name and home_name != "TBD":
+            home_hand = get_pitcher_hand_by_name(home_name)
+
         game = Game(
             game_id=raw["game_id"],
             game_date=date.fromisoformat(raw["game_date"]),
@@ -89,22 +100,24 @@ def _persist(db: Session, raw_games: list[dict]) -> None:
             fetched_at=datetime.utcnow(),
         )
         db.add(game)
-        db.flush()  # get game.id before adding pitchers
+        db.flush()
 
         db.add(
             Pitcher(
                 game_id=game.id,
                 side="away",
-                player_id=raw["away_pitcher_id"],
-                full_name=raw["away_pitcher_name"],
+                player_id=raw.get("away_pitcher_id"),
+                full_name=away_name,
+                hand=away_hand,
             )
         )
         db.add(
             Pitcher(
                 game_id=game.id,
                 side="home",
-                player_id=raw["home_pitcher_id"],
-                full_name=raw["home_pitcher_name"],
+                player_id=raw.get("home_pitcher_id"),
+                full_name=home_name,
+                hand=home_hand,
             )
         )
 
@@ -191,7 +204,7 @@ def _pitcher_dict(pitcher) -> dict:
     if pitcher is None:
         return {"name": "TBD", "player_id": None, "hand": None}
     name = pitcher.full_name or "TBD"
-    hand = get_pitcher_hand_by_name(name) if name and name != "TBD" else None
+    hand = pitcher.hand if pitcher.hand else None
     return {
         "name": name,
         "player_id": pitcher.player_id,

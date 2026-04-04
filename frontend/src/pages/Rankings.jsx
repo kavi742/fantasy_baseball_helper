@@ -1,25 +1,29 @@
 import { useState, useMemo } from 'react'
 import { useRankings } from '../hooks/useRankings'
+import { useColumnResize } from '../hooks/useColumnResize'
 import { RefreshCw, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 
 const COLUMNS = [
-  { key: 'rank',            label: '#',       title: 'Rank' },
-  { key: 'team_abbrev',     label: 'Team',    title: 'Team' },
-  { key: 'name',            label: 'Pitcher', title: 'Pitcher name' },
-  { key: 'opp_team_abbrev', label: 'Opp',     title: 'Opposing team' },
-  { key: 'difficulty',      label: 'Diff',    title: 'Matchup difficulty (1=easiest, 10=hardest)' },
-  { key: 'score',           label: 'Score',   title: 'Fantasy score for selected profile' },
-  { key: 'game_date',       label: 'Date',    title: 'Game date' },
-  { key: 'era',             label: 'ERA',     title: 'Earned Run Average (lower is better)' },
-  { key: 'whip',            label: 'WHIP',    title: 'Walks + Hits per Inning Pitched (lower is better)' },
-  { key: 'k_per_9',         label: 'K/9',     title: 'Strikeouts per 9 innings (display only)' },
-  { key: 'k_minus_bb',      label: 'K%-BB%',  title: 'Strikeout rate minus walk rate — used for scoring' },
-  { key: 'quality_starts',  label: 'QS',      title: 'Quality Starts' },
-  { key: 'svh',             label: 'SV+H',    title: 'Saves + Holds' },
-  { key: 'opp_avg',         label: 'Opp BA',  title: 'Opposing team batting average' },
-  { key: 'opp_ops',         label: 'Opp OPS', title: 'Opposing team OPS' },
-  { key: 'opp_k_rate',      label: 'Opp K%',  title: 'Opposing team strikeout rate as batters' },
+  { key: 'rank',            label: '#',       title: 'Rank',         defaultWidth: 40 },
+  { key: 'team_abbrev',     label: 'Team',    title: 'Team',         defaultWidth: 60 },
+  { key: 'name',            label: 'Pitcher', title: 'Pitcher name',  defaultWidth: 150 },
+  { key: 'hand',            label: 'Thows',   title: 'Throwing hand', defaultWidth: 50 },
+  { key: 'opp_team_abbrev', label: 'Opp',     title: 'Opposing team', defaultWidth: 60 },
+  { key: 'difficulty',      label: 'Diff',    title: 'Matchup difficulty (1=easiest, 10=hardest)', defaultWidth: 70 },
+  { key: 'score',           label: 'Score',   title: 'Fantasy score for selected profile', defaultWidth: 70 },
+  { key: 'game_date',       label: 'Date',    title: 'Game date',    defaultWidth: 80 },
+  { key: 'era',             label: 'ERA',     title: 'Earned Run Average (lower is better)', defaultWidth: 60 },
+  { key: 'whip',            label: 'WHIP',    title: 'Walks + Hits per Inning Pitched (lower is better)', defaultWidth: 60 },
+  { key: 'k_per_9',         label: 'K/9',    title: 'Strikeouts per 9 innings (display only)', defaultWidth: 60 },
+  { key: 'k_minus_bb',      label: 'K%-BB%',  title: 'Strikeout rate minus walk rate — used for scoring', defaultWidth: 70 },
+  { key: 'quality_starts',  label: 'QS',      title: 'Quality Starts', defaultWidth: 50 },
+  { key: 'svh',             label: 'SV+H',    title: 'Saves + Holds', defaultWidth: 55 },
+  { key: 'opp_avg',         label: 'Opp BA',  title: 'Opposing team batting average', defaultWidth: 65 },
+  { key: 'opp_ops',         label: 'Opp OPS', title: 'Opposing team OPS', defaultWidth: 70 },
+  { key: 'opp_k_rate',      label: 'Opp K%',  title: 'Opposing team strikeout rate as batters', defaultWidth: 65 },
 ]
+
+const DEFAULT_WIDTHS = Object.fromEntries(COLUMNS.map(c => [c.key, c.defaultWidth]))
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -75,6 +79,11 @@ export function Rankings() {
     sortKey, sortDir, handleSort,
     refresh,
   } = useRankings()
+
+  const { widths, startResize, resetWidth, getWidth } = useColumnResize(
+    COLUMNS.map(c => c.key),
+    DEFAULT_WIDTHS
+  )
 
   const [selectedDay, setSelectedDay] = useState(null)
 
@@ -205,13 +214,22 @@ export function Rankings() {
                   <th
                     key={col.key}
                     onClick={() => handleSort(col.key)}
-                    title={col.title}
+                    onDoubleClick={() => resetWidth(col.key)}
+                    title={`${col.title}\nDouble-click to reset width`}
                     className={sortKey === col.key ? 'col--sorted' : ''}
+                    style={{
+                      width: getWidth(col.key),
+                      minWidth: 40,
+                    }}
                   >
                     <span className="th-inner">
                       {col.label}
                       <SortIcon colKey={col.key} sortKey={sortKey} sortDir={sortDir} />
                     </span>
+                    <span
+                      className="resize-handle"
+                      onMouseDown={(e) => { e.stopPropagation(); startResize(e, col.key) }}
+                    />
                   </th>
                 ))}
               </tr>
@@ -219,29 +237,27 @@ export function Rankings() {
             <tbody>
               {displayed.map((p, i) => (
                 <tr key={`${p.name}-${p.game_date}`} className={i % 2 === 0 ? 'row-even' : 'row-odd'}>
-                  <td className="col-rank">{p.rank}</td>
-                  <td className="col-team"><span className="team-pill">{p.team_abbrev}</span></td>
-                  <td className="col-name">
-                    {p.name}
-                    {p.hand && <span className="pitcher-hand">{p.hand}</span>}
-                  </td>
-                  <td className="col-opp"><span className="team-pill team-pill--opp">{p.opp_team_abbrev}</span></td>
-                  <td className="col-difficulty"><DifficultyBadge value={p.difficulty} /></td>
-                  <td className="col-score"><strong>{p.score != null ? p.score.toFixed(1) : '—'}</strong></td>
-                  <td className="col-date">{p.game_date ? p.game_date.slice(5) : '—'}</td>
-                  <td className={`col-stat ${p.era != null && p.era < 3.5 ? 'stat--good' : p.era != null && p.era > 4.5 ? 'stat--bad' : ''}`}>
+                  <td className="col-rank" style={{ width: getWidth('rank'), minWidth: 40 }}>{p.rank}</td>
+                  <td className="col-team" style={{ width: getWidth('team_abbrev'), minWidth: 40 }}><span className="team-pill">{p.team_abbrev}</span></td>
+                  <td className="col-name" style={{ width: getWidth('name'), minWidth: 80 }}>{p.name}</td>
+                  <td className="col-hand" style={{ width: getWidth('hand'), minWidth: 40 }}>{p.hand || '—'}</td>
+                  <td className="col-opp" style={{ width: getWidth('opp_team_abbrev'), minWidth: 40 }}><span className="team-pill team-pill--opp">{p.opp_team_abbrev}</span></td>
+                  <td className="col-difficulty" style={{ width: getWidth('difficulty'), minWidth: 50 }}><DifficultyBadge value={p.difficulty} /></td>
+                  <td className="col-score" style={{ width: getWidth('score'), minWidth: 50 }}><strong>{p.score != null ? p.score.toFixed(1) : '—'}</strong></td>
+                  <td className="col-date" style={{ width: getWidth('game_date'), minWidth: 60 }}>{p.game_date ? p.game_date.slice(5) : '—'}</td>
+                  <td className={`col-stat ${p.era != null && p.era < 3.5 ? 'stat--good' : p.era != null && p.era > 4.5 ? 'stat--bad' : ''}`} style={{ width: getWidth('era'), minWidth: 50 }}>
                     {fmt(p.era)}
                   </td>
-                  <td className={`col-stat ${p.whip != null && p.whip < 1.2 ? 'stat--good' : p.whip != null && p.whip > 1.4 ? 'stat--bad' : ''}`}>
+                  <td className={`col-stat ${p.whip != null && p.whip < 1.2 ? 'stat--good' : p.whip != null && p.whip > 1.4 ? 'stat--bad' : ''}`} style={{ width: getWidth('whip'), minWidth: 50 }}>
                     {fmt(p.whip)}
                   </td>
-                  <td className="col-stat">{fmt(p.k_per_9)}</td>
-                  <td className="col-stat">{fmtKminusBB(p.k_minus_bb)}</td>
-                  <td className="col-stat">{fmt(p.quality_starts, 0)}</td>
-                  <td className="col-stat">{fmt(p.svh, 0)}</td>
-                  <td className="col-stat">{fmt(p.opp_avg, 3)}</td>
-                  <td className="col-stat">{fmt(p.opp_ops, 3)}</td>
-                  <td className="col-stat">{fmtPct(p.opp_k_rate)}</td>
+                  <td className="col-stat" style={{ width: getWidth('k_per_9'), minWidth: 50 }}>{fmt(p.k_per_9)}</td>
+                  <td className="col-stat" style={{ width: getWidth('k_minus_bb'), minWidth: 60 }}>{fmtKminusBB(p.k_minus_bb)}</td>
+                  <td className="col-stat" style={{ width: getWidth('quality_starts'), minWidth: 40 }}>{fmt(p.quality_starts, 0)}</td>
+                  <td className="col-stat" style={{ width: getWidth('svh'), minWidth: 50 }}>{fmt(p.svh, 0)}</td>
+                  <td className="col-stat" style={{ width: getWidth('opp_avg'), minWidth: 50 }}>{fmt(p.opp_avg, 3)}</td>
+                  <td className="col-stat" style={{ width: getWidth('opp_ops'), minWidth: 50 }}>{fmt(p.opp_ops, 3)}</td>
+                  <td className="col-stat" style={{ width: getWidth('opp_k_rate'), minWidth: 50 }}>{fmtPct(p.opp_k_rate)}</td>
                 </tr>
               ))}
             </tbody>

@@ -71,3 +71,19 @@ export function fetchRelievers(season = null, force = false) {
   if (season) params.append('season', season)
   return request(`/relievers?${params}`, `relievers:${season || new Date().getFullYear()}`, force)
 }
+
+/**
+ * Fetch game detail with lineups and splits.
+ * @param {number|string} gameId - MLB game ID
+ * @param {boolean} force - bypass cache, fetch fresh data
+ */
+export function fetchGame(gameId, force = false) {
+  return request(`/game/${gameId}`, `game:${gameId}`, force)
+}
+
+/**
+ * Clear all cached data.
+ */
+export function clearCache() {
+  cache.clear()
+}

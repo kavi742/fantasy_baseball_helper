@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
 from datetime import date
 
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
+
 from database import get_db
-from services.rankings import get_rankings, PROFILES
+from services.rankings import PROFILES, get_rankings
 from services.reliever_rankings import get_reliever_rankings as fetch_reliever_rankings
 
 router = APIRouter()

@@ -1,8 +1,22 @@
 import { useState, useMemo } from 'react'
 
 export function useFilters(games = []) {
+  const today = new Date().toISOString().split('T')[0]
+
+  // Get unique dates from games
+  const dates = useMemo(() => {
+    const seen = new Set()
+    return games
+      .map(g => g.game_date)
+      .filter(d => { if (seen.has(d)) return false; seen.add(d); return true })
+      .sort()
+  }, [games])
+
+  // Default to today if available, otherwise null (all days)
+  const defaultDate = dates.includes(today) ? today : null
+
   const [search, setSearch] = useState('')
-  const [selectedDate, setSelectedDate] = useState(null)
+  const [selectedDate, setSelectedDate] = useState(defaultDate)
   const [hideTbd, setHideTbd] = useState(false)
 
   const filtered = useMemo(() => {
@@ -30,15 +44,6 @@ export function useFilters(games = []) {
 
     return result
   }, [games, search, selectedDate, hideTbd])
-
-  // Unique dates in the week for the day tabs
-  const dates = useMemo(() => {
-    const seen = new Set()
-    return games
-      .map(g => g.game_date)
-      .filter(d => { if (seen.has(d)) return false; seen.add(d); return true })
-      .sort()
-  }, [games])
 
   return {
     search, setSearch,
