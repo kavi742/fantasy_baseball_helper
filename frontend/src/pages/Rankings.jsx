@@ -221,7 +221,10 @@ export function Rankings() {
                 <tr key={`${p.name}-${p.game_date}`} className={i % 2 === 0 ? 'row-even' : 'row-odd'}>
                   <td className="col-rank">{p.rank}</td>
                   <td className="col-team"><span className="team-pill">{p.team_abbrev}</span></td>
-                  <td className="col-name">{p.name}</td>
+                  <td className="col-name">
+                    {p.name}
+                    {p.hand && <span className="pitcher-hand">{p.hand}</span>}
+                  </td>
                   <td className="col-opp"><span className="team-pill team-pill--opp">{p.opp_team_abbrev}</span></td>
                   <td className="col-difficulty"><DifficultyBadge value={p.difficulty} /></td>
                   <td className="col-score"><strong>{p.score != null ? p.score.toFixed(1) : '—'}</strong></td>

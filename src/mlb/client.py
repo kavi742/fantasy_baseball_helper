@@ -177,6 +177,46 @@ def get_all_bullpens(season: int | None = None) -> list[dict]:
     return bullpens
 
 
+@lru_cache(maxsize=500)
+def get_pitcher_hand(player_id: int) -> str | None:
+    """
+    Fetch the throwing hand for a pitcher.
+    Returns 'L', 'R', or None.
+    """
+    if not player_id:
+        return None
+    try:
+        result = statsapi.get("people", {"personIds": player_id})
+        if not result:
+            return None
+        people = result.get("people", [])
+        if people:
+            pitch_hand = people[0].get("pitchHand")
+            if pitch_hand:
+                return pitch_hand.get("code")
+    except Exception as e:
+        logger.warning(f"Failed to fetch hand for pitcher {player_id}: {e}")
+    return None
+
+
+@lru_cache(maxsize=1000)
+def get_pitcher_hand_by_name(name: str) -> str | None:
+    """
+    Look up a pitcher by name and return their throwing hand.
+    Returns 'L', 'R', or None.
+    """
+    if not name or name == "TBD":
+        return None
+    try:
+        players = statsapi.lookup_player(name)
+        if players:
+            player_id = players[0].get("id")
+            return get_pitcher_hand(player_id)
+    except Exception as e:
+        logger.warning(f"Failed to look up hand for pitcher {name}: {e}")
+    return None
+
+
 def is_quality_start(ip: float | str | None, er: int | str | None) -> bool:
     """
     Determine if a pitching performance qualifies as a Quality Start.

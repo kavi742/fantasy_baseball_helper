@@ -6,6 +6,7 @@ function PitcherLine({ pitcher, side, qs }) {
       <span className={`pitcher-name ${isTbd ? 'pitcher-tbd' : ''}`}>
         {isTbd ? 'TBD' : pitcher.name}
       </span>
+      {pitcher?.hand && <span className="pitcher-hand">{pitcher.hand}</span>}
       {qs === true && <span className="qs-badge" title="Quality Start">QS</span>}
       {qs === false && <span className="no-qs-badge" title="No Quality Start">-</span>}
     </div>

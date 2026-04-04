@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class PitcherSchema(BaseModel):
     name: str
     player_id: int | None
+    hand: str | None
 
 
 class GameSchema(BaseModel):

@@ -101,7 +101,10 @@ export function RelieverRankings() {
                 <tr key={`${p.name}-${p.team_abbrev}`} className={i % 2 === 0 ? 'row-even' : 'row-odd'}>
                   <td className="col-rank">{p.rank}</td>
                   <td className="col-team"><span className="team-pill">{p.team_abbrev}</span></td>
-                  <td className="col-name">{p.name}</td>
+                  <td className="col-name">
+                    {p.name}
+                    {p.hand && <span className="pitcher-hand">{p.hand}</span>}
+                  </td>
                   <td className="col-stat">{fmt(p.saves, 0)}</td>
                   <td className="col-stat">{fmt(p.holds, 0)}</td>
                   <td className="col-stat"><strong>{fmt(p.svh, 0)}</strong></td>

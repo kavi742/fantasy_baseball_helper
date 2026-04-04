@@ -148,6 +148,7 @@ input  { font: inherit; color: inherit; }
 .pitcher-line { display: flex; align-items: center; gap: 8px; }
 .pitcher-role { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); width: 34px; flex-shrink: 0; }
 .pitcher-name { font-size: 13px; font-weight: 500; }
+.pitcher-hand { font-size: 11px; font-weight: 600; color: var(--text-2); margin-left: 4px; }
 .pitcher-tbd { color: var(--tbd-text); font-style: italic; font-weight: 400; }
 .pitcher-divider { height: 1px; background: var(--border); }
 

@@ -17,6 +17,7 @@ from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
+from mlb.client import get_pitcher_hand_by_name
 from mlb.stats import get_pitcher_stats, get_team_batting_stats
 from models import Game, Pitcher
 
@@ -45,9 +46,7 @@ PROFILES = {
 }
 
 
-def get_rankings(
-    db: Session, profile: str = "balanced", week_start: date | None = None
-) -> dict:
+def get_rankings(db: Session, profile: str = "balanced", week_start: date | None = None) -> dict:
     if profile not in PROFILES:
         profile = "balanced"
 
@@ -63,9 +62,7 @@ def get_rankings(
     #     return {"profile": profile, "profiles": _profile_list(), "pitchers": []}
 
     # Fetch stats — pybaseball by name, team batting by team ID
-    player_names = [
-        p["name"] for p in pitchers_data if p["name"] and p["name"] != "Unknown"
-    ]
+    player_names = [p["name"] for p in pitchers_data if p["name"] and p["name"] != "Unknown"]
     team_ids = list({p["opp_team_id"] for p in pitchers_data if p["opp_team_id"]})
 
     pitcher_stats = get_pitcher_stats(player_names) if player_names else {}
@@ -90,10 +87,9 @@ def get_rankings(
         p["bb_pct"] = bb_pct  # display only
         p["xfip"] = stats.get("xfip")
         p["siera"] = stats.get("siera")
+        p["hand"] = get_pitcher_hand_by_name(p["name"]) if p.get("name") else None
         p["k_minus_bb"] = (
-            round(k_pct - bb_pct, 4)
-            if (k_pct is not None and bb_pct is not None)
-            else None
+            round(k_pct - bb_pct, 4) if (k_pct is not None and bb_pct is not None) else None
         )
 
         opp = team_stats.get(p["opp_team_id"], {})
@@ -129,18 +125,10 @@ def _collect_pitchers(db: Session, start: date, end: date) -> list[dict]:
         for pitcher in game.pitchers:
             if not pitcher.full_name:
                 continue  # skip TBDs — match on name, not player_id
-            opp_abbrev = (
-                game.home_team_abbrev
-                if pitcher.side == "away"
-                else game.away_team_abbrev
-            )
+            opp_abbrev = game.home_team_abbrev if pitcher.side == "away" else game.away_team_abbrev
             opp_team = game.home_team if pitcher.side == "away" else game.away_team
             own_team = game.away_team if pitcher.side == "away" else game.home_team
-            own_abbrev = (
-                game.away_team_abbrev
-                if pitcher.side == "away"
-                else game.home_team_abbrev
-            )
+            own_abbrev = game.away_team_abbrev if pitcher.side == "away" else game.home_team_abbrev
 
             entries.append(
                 {

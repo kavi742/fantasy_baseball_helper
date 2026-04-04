@@ -12,7 +12,12 @@ import logging
 
 from sqlalchemy.orm import Session
 
-from mlb.client import get_weekly_schedule, is_quality_start, get_game_boxscore
+from mlb.client import (
+    get_weekly_schedule,
+    is_quality_start,
+    get_game_boxscore,
+    get_pitcher_hand_by_name,
+)
 from models import Game, Pitcher
 
 logger = logging.getLogger(__name__)
@@ -139,14 +144,10 @@ def _serialise(db: Session, start_date: date, end_date: date) -> list[dict]:
             boxscore = get_game_boxscore(int(game.game_id))
             if boxscore:
                 away_name = (
-                    away_pitcher.full_name
-                    if away_pitcher and away_pitcher.full_name
-                    else ""
+                    away_pitcher.full_name if away_pitcher and away_pitcher.full_name else ""
                 )
                 home_name = (
-                    home_pitcher.full_name
-                    if home_pitcher and home_pitcher.full_name
-                    else ""
+                    home_pitcher.full_name if home_pitcher and home_pitcher.full_name else ""
                 )
 
                 def names_match(pitcher_name, boxscore_name):
@@ -155,9 +156,7 @@ def _serialise(db: Session, start_date: date, end_date: date) -> list[dict]:
                     pitcher_lower = pitcher_name.lower()
                     boxscore_lower = boxscore_name.lower()
                     parts = pitcher_lower.split()
-                    return any(
-                        part in boxscore_lower for part in parts if len(part) > 3
-                    )
+                    return any(part in boxscore_lower for part in parts if len(part) > 3)
 
                 for name, stats in boxscore.items():
                     if names_match(away_name, name):
@@ -190,10 +189,13 @@ def _serialise(db: Session, start_date: date, end_date: date) -> list[dict]:
 
 def _pitcher_dict(pitcher) -> dict:
     if pitcher is None:
-        return {"name": "TBD", "player_id": None}
+        return {"name": "TBD", "player_id": None, "hand": None}
+    name = pitcher.full_name or "TBD"
+    hand = get_pitcher_hand_by_name(name) if name and name != "TBD" else None
     return {
-        "name": pitcher.full_name or "TBD",
+        "name": name,
         "player_id": pitcher.player_id,
+        "hand": hand,
     }
 
 

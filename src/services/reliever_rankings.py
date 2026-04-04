@@ -10,7 +10,7 @@ Flow:
 import logging
 from datetime import date
 
-from mlb.client import get_all_bullpens
+from mlb.client import get_all_bullpens, get_pitcher_hand_by_name
 from mlb.stats import get_pitcher_stats
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,7 @@ def get_reliever_rankings(season: int | None = None) -> dict:
         b["xfip"] = stats.get("xfip")
         b["siera"] = stats.get("siera")
         b["games_started"] = stats.get("games_started")
+        b["hand"] = get_pitcher_hand_by_name(b["name"]) if b.get("name") else None
         b["k_minus_bb"] = (
             round(b["k_pct"] - b["bb_pct"], 4)
             if (b["k_pct"] is not None and b["bb_pct"] is not None)
