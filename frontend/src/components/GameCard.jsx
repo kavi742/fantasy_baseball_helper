@@ -40,12 +40,21 @@ function GameLinks({ gameId }) {
   )
 }
 
-export function GameCard({ game }) {
+export function GameCard({ game, liveScore }) {
   const time = formatTime(game.game_time)
   const bothTbd = game.away_pitcher?.name === 'TBD' && game.home_pitcher?.name === 'TBD'
-  const hasScore = game.away_score != null && game.home_score != null
-  const isLive = game.status === 'In Progress' || game.status === 'Live'
-  const isFinal = game.status === 'Final'
+
+  // Use live score if available, otherwise use cached score
+  const awayScore = liveScore?.away_score ?? game.away_score
+  const homeScore = liveScore?.home_score ?? game.home_score
+  const status = liveScore?.status ?? game.status
+  const currentInning = liveScore?.current_inning ?? game.current_inning
+  const inningState = liveScore?.inning_state ?? game.inning_state
+
+  const hasScore = awayScore != null && homeScore != null
+  const isLive = status === 'In Progress' || status === 'Live'
+  const isFinal = status === 'Final'
+  const isDelayed = status === 'Delayed' || status === 'Suspended'
 
   return (
     <div className={`game-card ${bothTbd ? 'game-card-tbd' : ''}`}>
@@ -58,12 +67,17 @@ export function GameCard({ game }) {
         <div className="game-meta">
           {hasScore && (
             <span className={`game-score ${isLive ? 'game-score-live' : ''}`}>
-              {game.away_score} - {game.home_score}
+              {awayScore} - {homeScore}
             </span>
           )}
           {time && !hasScore && <span className="game-time">{time}</span>}
-          {isLive && <span className="game-inning">{'Top'.length > 0 ? '' : ''}</span>}
-          {!isLive && game.status && !hasScore && <span className="game-status">{game.status}</span>}
+          {isLive && currentInning && (
+            <span className="game-inning">
+              {inningState === 'Top' ? '↑ ' : inningState === 'Bottom' ? '↓ ' : ''}{currentInning}
+            </span>
+          )}
+          {isDelayed && <span className="game-inning game-inning-delayed">{status}</span>}
+          {!isLive && !isDelayed && status && !hasScore && <span className="game-status">{status}</span>}
         </div>
       </div>
 

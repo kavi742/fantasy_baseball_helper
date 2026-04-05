@@ -93,6 +93,20 @@ export function fetchGame(gameId, force = false) {
 }
 
 /**
+ * Fetch live scores for specified game IDs.
+ * @param {string[]} gameIds - Array of game IDs
+ * @param {boolean} force - bypass cache, fetch fresh data
+ */
+export function fetchScores(gameIds, force = false) {
+  if (!gameIds || gameIds.length === 0) {
+    return Promise.resolve({ scores: [] })
+  }
+  const gameIdsStr = gameIds.join(',')
+  // Scores should not be cached long - always fetch fresh
+  return request(`/scores?game_ids=${gameIdsStr}`, null, force)
+}
+
+/**
  * Clear all cached data.
  */
 export function clearCache() {

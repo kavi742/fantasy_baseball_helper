@@ -13,6 +13,7 @@ import os
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+import statsapi
 from sqlalchemy.orm import Session
 
 from mlb.client import (
@@ -237,3 +238,33 @@ def _current_week_range() -> tuple[date, date]:
     monday = today - timedelta(days=today.weekday())
     sunday = monday + timedelta(days=6)
     return monday, sunday
+
+
+def get_live_scores(game_ids: list[str]) -> list[dict]:
+    """
+    Fetch live score data for a list of game IDs.
+    Returns lightweight dict with game_id, scores, status, and inning.
+    """
+    if not game_ids:
+        return []
+
+    scores = []
+    for game_id in game_ids:
+        try:
+            raw = statsapi.schedule(start_date="", end_date="", game_id=int(game_id))
+            if raw:
+                g = raw[0]
+                scores.append(
+                    {
+                        "game_id": game_id,
+                        "away_score": g.get("away_score"),
+                        "home_score": g.get("home_score"),
+                        "status": g.get("status"),
+                        "current_inning": g.get("current_inning"),
+                        "inning_state": g.get("inning_state"),
+                    }
+                )
+        except Exception:
+            pass
+
+    return scores

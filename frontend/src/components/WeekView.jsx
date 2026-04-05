@@ -25,7 +25,26 @@ function groupByDate(games) {
   return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
 }
 
-export function WeekView({ games }) {
+function getGamePriority(game, scores) {
+  const liveScore = scores[game.game_id]
+  const status = liveScore?.status ?? game.status
+
+  if (status === 'In Progress' || status === 'Live') return 0  // Active games first
+  if (status === 'Final') return 2  // Final games last
+  return 1  // Scheduled/Upcoming in the middle
+}
+
+function sortByStatus(dayGames, scores) {
+  return [...dayGames].sort((a, b) => {
+    const priorityA = getGamePriority(a, scores)
+    const priorityB = getGamePriority(b, scores)
+    if (priorityA !== priorityB) return priorityA - priorityB
+    // Within same priority, sort by game_id
+    return a.game_id.localeCompare(b.game_id)
+  })
+}
+
+export function WeekView({ games, scores = {} }) {
   if (games.length === 0) {
     return (
       <div className="empty-state">
@@ -41,16 +60,17 @@ export function WeekView({ games }) {
     <div className="week-view">
       {grouped.map(([date, dayGames]) => {
         const { label, dateLabel } = formatDayHeading(date)
+        const sortedGames = sortByStatus(dayGames, scores)
         return (
           <section key={date} className="day-section">
             <div className="day-heading">
               <span className="day-heading-label">{label}</span>
               <span className="day-heading-date">{dateLabel}</span>
-              <span className="day-heading-count">{dayGames.length} game{dayGames.length !== 1 ? 's' : ''}</span>
+              <span className="day-heading-count">{sortedGames.length} game{sortedGames.length !== 1 ? 's' : ''}</span>
             </div>
             <div className="game-grid">
-              {dayGames.map(game => (
-                <GameCard key={game.game_id} game={game} />
+              {sortedGames.map(game => (
+                <GameCard key={game.game_id} game={game} liveScore={scores[game.game_id]} />
               ))}
             </div>
           </section>

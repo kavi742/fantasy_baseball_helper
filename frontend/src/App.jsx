@@ -7,6 +7,7 @@ import { Rankings } from './pages/Rankings'
 import { RelieverRankings } from './pages/RelieverRankings'
 import { GameDetail } from './pages/GameDetail'
 import { useWeek } from './hooks/useWeek'
+import { useScores } from './hooks/useScores'
 import { useFilters } from './hooks/useFilters'
 import { useTheme } from './hooks/useTheme'
 import { fetchWeek, fetchRankings, fetchRelievers } from './api/client'
@@ -24,6 +25,10 @@ function AppContent() {
   const { data, loading, error, isCurrentWeek, goToPrevWeek, goToNextWeek, goToCurrentWeek } = useWeek()
   const { search, setSearch, selectedDate, setSelectedDate, hideTbd, setHideTbd, filtered, dates } = useFilters(data?.games ?? [])
   const { themeId, setThemeId } = useTheme()
+
+  // Get game IDs for live score polling
+  const gameIds = filtered.map(g => g.game_id)
+  const { scores } = useScores(gameIds)
 
   const isGameDetail = location.pathname.startsWith('/game/')
 
@@ -88,7 +93,7 @@ function AppContent() {
                 />
                 {loading
                   ? <div className="loading-grid">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="game-card-skeleton" />)}</div>
-                  : <WeekView games={filtered} />
+                  : <WeekView games={filtered} scores={scores} />
                 }
               </>
             )}
