@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchRelievers } from '../api/client'
+import { fetchRelievers, getCachedData } from '../api/client'
+
+const PREFETCH_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
+function buildCacheKey(period) {
+  return `relievers:${new Date().getFullYear()}:${period}`
+}
 
 export function useRelievers(period = 'season') {
   const [data, setData] = useState(null)
@@ -21,9 +27,31 @@ export function useRelievers(period = 'season') {
     }
   }, [period])
 
+  // Check cache on mount before loading
   useEffect(() => {
-    load()
-  }, [load])
+    const cacheKey = buildCacheKey(period)
+    const cached = getCachedData(cacheKey, PREFETCH_TTL_MS)
+    
+    if (cached) {
+      setData(cached)
+      setLoading(false)
+    } else {
+      load()
+    }
+  }, []) // Only run once on mount
+
+  // Reload when period changes
+  useEffect(() => {
+    const cacheKey = buildCacheKey(period)
+    const cached = getCachedData(cacheKey, PREFETCH_TTL_MS)
+    
+    if (cached) {
+      setData(cached)
+      setLoading(false)
+    } else {
+      load()
+    }
+  }, [period, load])
 
   const handleSort = (key) => {
     if (sortKey === key) {

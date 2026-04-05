@@ -28,11 +28,10 @@ function AppContent() {
   const isGameDetail = location.pathname.startsWith('/game/')
 
   useEffect(() => {
-    if (import.meta.env.DEV) {
-      fetchWeek()
-      fetchRankings('balanced')
-      fetchRelievers()
-    }
+    // Prefetch data on app load to ensure cache is warm
+    fetchWeek()
+    fetchRankings('balanced')
+    fetchRelievers()
   }, [])
 
   const handleTabClick = (tabId) => {

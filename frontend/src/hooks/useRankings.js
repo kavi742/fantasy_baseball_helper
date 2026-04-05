@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchRankings } from '../api/client'
+import { fetchRankings, getCachedData } from '../api/client'
 
 function getMondayISO(offsetWeeks = 0) {
   const d = new Date()
@@ -20,6 +20,19 @@ function getTomorrowISO() {
   return d.toISOString().split('T')[0]
 }
 
+const PREFETCH_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
+function buildCacheKey(profile, weekStart) {
+  return `rankings:${profile}:${weekStart || 'current'}`
+}
+
+function getWeekStart(w) {
+  if (w === 'today') return getTodayISO()
+  if (w === 'tomorrow') return getTomorrowISO()
+  if (w === 'current') return getMondayISO()
+  return getMondayISO(1)
+}
+
 export function useRankings() {
   const [profile, setProfile] = useState('balanced')
   const [week, setWeek] = useState('tomorrow')  // 'today' | 'current' | 'next' | 'tomorrow'
@@ -33,16 +46,7 @@ export function useRankings() {
     setLoading(true)
     setError(null)
     try {
-      let weekStart
-      if (w === 'today') {
-        weekStart = getTodayISO()
-      } else if (w === 'tomorrow') {
-        weekStart = getTomorrowISO()
-      } else if (w === 'current') {
-        weekStart = getMondayISO()
-      } else {
-        weekStart = getMondayISO(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
-      }
+      const weekStart = getWeekStart(w)
       const result = await fetchRankings(p, weekStart, force)
       setData(result)
     } catch (err) {
@@ -52,8 +56,32 @@ export function useRankings() {
     }
   }, [])
 
+  // Check cache on mount before loading
   useEffect(() => {
-    load(profile, week)
+    const weekStart = getWeekStart(week)
+    const cacheKey = buildCacheKey(profile, weekStart)
+    const cached = getCachedData(cacheKey, PREFETCH_TTL_MS)
+    
+    if (cached) {
+      setData(cached)
+      setLoading(false)
+    } else {
+      load(profile, week)
+    }
+  }, []) // Only run once on mount
+
+  // Reload when profile or week changes
+  useEffect(() => {
+    const weekStart = getWeekStart(week)
+    const cacheKey = buildCacheKey(profile, weekStart)
+    const cached = getCachedData(cacheKey, PREFETCH_TTL_MS)
+    
+    if (cached) {
+      setData(cached)
+      setLoading(false)
+    } else {
+      load(profile, week)
+    }
   }, [profile, week, load])
 
   const handleSort = (key) => {

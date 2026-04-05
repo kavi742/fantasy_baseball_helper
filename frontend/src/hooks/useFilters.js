@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 export function useFilters(games = []) {
   const today = new Date().toISOString().split('T')[0]
@@ -12,12 +12,16 @@ export function useFilters(games = []) {
       .sort()
   }, [games])
 
-  // Default to today if available, otherwise null (all days)
-  const defaultDate = dates.includes(today) ? today : null
-
   const [search, setSearch] = useState('')
-  const [selectedDate, setSelectedDate] = useState(defaultDate)
+  const [selectedDate, setSelectedDate] = useState(null)
   const [hideTbd, setHideTbd] = useState(false)
+
+  // Set default to today when dates become available
+  useEffect(() => {
+    if (dates.includes(today) && selectedDate === null) {
+      setSelectedDate(today)
+    }
+  }, [dates, today])
 
   const filtered = useMemo(() => {
     let result = games

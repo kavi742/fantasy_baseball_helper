@@ -639,13 +639,38 @@ This is unavoidable. Subsequent loads are ~20ms from database cache.
 - Subsequent loads: ~235ms (all caches warm)
 - Before optimization: ~228 seconds (3+ minutes)
 
-### 11.5 Frontend Caching
+### 11.6 SQLite Concurrency Fix
+
+**Problem:** When multiple API requests hit simultaneously (e.g., prefetch on page load), SQLite database locks caused "database is locked" errors.
+
+**Solution:** Enabled WAL (Write-Ahead Logging) mode and optimized SQLite pragmas in `database.py`:
+
+```python
+def _set_sqlite_pragma(dbapi_conn, connection_record):
+    if settings.database_url.startswith("sqlite"):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")      # Allows concurrent reads during writes
+        cursor.execute("PRAGMA synchronous=NORMAL")    # Better performance with WAL
+        cursor.execute("PRAGMA busy_timeout=5000")    # Wait up to 5 seconds for locks
+        cursor.execute("PRAGMA cache_size=-64000")    # 64MB cache
+        cursor.close()
+
+event.listen(engine, "connect", _set_sqlite_pragma)
+```
+
+**Key Settings:**
+- `journal_mode=WAL` - Enables concurrent access (reads don't block writes)
+- `busy_timeout=5000` - 5 second wait before failing on lock
+- `synchronous=NORMAL` - Safe with WAL, faster than FULL
+- `cache_size=-64000` - 64MB in-memory cache
+
+### 11.7 Frontend Caching
 
 The React API client (`frontend/src/api/client.js`) uses a Map-based cache with 5-minute TTL:
 - `fetchWeek()`, `fetchRankings()`, `fetchRelievers()`, `fetchGame()` all use caching
 - `clearCache()` function available for force refresh
 
-### 11.6 Color Scheme
+### 11.8 Color Scheme
 
 CSS variables are used for theme support (light/dark mode):
 ```css

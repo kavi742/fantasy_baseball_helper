@@ -7,8 +7,11 @@ Flow:
   3. If stale or missing, fetch from MLB API, persist, return
 """
 
+import fcntl
 import logging
+import os
 from datetime import date, datetime, timedelta
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -20,6 +23,8 @@ from mlb.client import (
 )
 from models import Game, Pitcher
 
+LOCK_FILE = Path(__file__).parent.parent / "schedule.lock"
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,13 +32,22 @@ def get_week_games(db: Session, start_date: date, end_date: date) -> list[dict]:
     """
     Return games for the given date range.
     Refreshes from the MLB API if the cache is stale (older than today).
+    Uses a file lock to prevent concurrent writes.
     """
     if _cache_is_fresh(db, start_date):
         return _serialise(db, start_date, end_date)
 
-    raw_games = get_weekly_schedule(start_date, end_date)
-    _persist(db, raw_games)
-    return _serialise(db, start_date, end_date)
+    with open(LOCK_FILE, "w") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        try:
+            if _cache_is_fresh(db, start_date):
+                return _serialise(db, start_date, end_date)
+
+            raw_games = get_weekly_schedule(start_date, end_date)
+            _persist(db, raw_games)
+            return _serialise(db, start_date, end_date)
+        finally:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
 def refresh_current_week(db: Session) -> None:
@@ -41,9 +55,14 @@ def refresh_current_week(db: Session) -> None:
     Called by the scheduler each morning.
     Forces a fresh fetch for the current fantasy week.
     """
-    start, end = _current_week_range()
-    raw_games = get_weekly_schedule(start, end)
-    _persist(db, raw_games)
+    with open(LOCK_FILE, "w") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        try:
+            start, end = _current_week_range()
+            raw_games = get_weekly_schedule(start, end)
+            _persist(db, raw_games)
+        finally:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

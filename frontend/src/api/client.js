@@ -3,9 +3,9 @@ const BASE = '/api'
 const cache = new Map()
 const CACHE_TTL_MS = 5 * 60 * 1000
 
-function getCached(key) {
+function getCached(key, ttlMs = CACHE_TTL_MS) {
   const entry = cache.get(key)
-  if (entry && Date.now() - entry.ts < CACHE_TTL_MS) {
+  if (entry && Date.now() - entry.ts < ttlMs) {
     return entry.data
   }
   cache.delete(key)
@@ -36,6 +36,16 @@ async function request(path, cacheKey = null, force = false) {
   const data = await res.json()
   if (cacheKey) setCache(cacheKey, data)
   return data
+}
+
+/**
+ * Get cached data if available and fresh (within ttlMs).
+ * @param {string} cacheKey 
+ * @param {number} ttlMs - TTL in milliseconds
+ * @returns {object|null} Cached data or null
+ */
+export function getCachedData(cacheKey, ttlMs) {
+  return getCached(cacheKey, ttlMs)
 }
 
 /**
