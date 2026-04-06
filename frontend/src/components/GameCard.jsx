@@ -53,7 +53,7 @@ export function GameCard({ game, liveScore }) {
 
   const hasScore = awayScore != null && homeScore != null
   const isLive = status === 'In Progress' || status === 'Live'
-  const isFinal = status === 'Final'
+  const isFinal = status === 'Final' || status === 'Game Over'
   const isDelayed = status === 'Delayed' || status === 'Suspended'
 
   return (
@@ -65,12 +65,12 @@ export function GameCard({ game, liveScore }) {
           <span className="team-abbrev">{game.home_team_abbrev}</span>
         </div>
         <div className="game-meta">
+          {time && <span className="game-time">{time}</span>}
           {hasScore && (
             <span className={`game-score ${isLive ? 'game-score-live' : ''}`}>
-              {awayScore} - {homeScore}
+              {awayScore} - {homeScore}{isFinal && <span className="game-final">F</span>}
             </span>
           )}
-          {time && !hasScore && <span className="game-time">{time}</span>}
           {isLive && currentInning && (
             <span className="game-inning">
               {inningState === 'Top' ? '↑ ' : inningState === 'Bottom' ? '↓ ' : ''}{currentInning}

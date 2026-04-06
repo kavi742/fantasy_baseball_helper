@@ -23,6 +23,9 @@
   --highlight-header-bg: #c8e6c9;
   --highlight-row-bg: #f0fdf4;
   --highlight-text: #2e7d32;
+  --live-green: #2ecc71;
+  --good-green: #2f9e44;
+  --bad-red: #e03131;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -44,6 +47,7 @@
     --highlight-header-bg: #1b3d1e;
     --highlight-row-bg: #1a3d22;
     --highlight-text: #81c784;
+    --live-green: #4ade80;
   }
 }
 
@@ -144,8 +148,17 @@ input  { font: inherit; color: inherit; }
 .game-meta { display: flex; align-items: center; gap: 8px; }
 .game-time { font-size: 11px; color: var(--text-3); }
 .game-score { font-size: 14px; font-weight: 700; color: var(--text); }
-.game-score-live { color: #2ecc71; }
-.game-inning { font-size: 11px; font-weight: 600; color: #2ecc71; }
+.game-score-live { color: var(--live-green); }
+.game-inning { font-size: 11px; font-weight: 600; color: var(--accent); }
+.game-final {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--live-green);
+  margin-left: 4px;
+  background: var(--bg-subtle);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
 .game-status { font-size: 11px; color: var(--text-3); }
 
 .game-card-teams { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); }
@@ -329,10 +342,22 @@ input  { font: inherit; color: inherit; }
 .col-score { font-size: 14px; color: var(--text); }
 .col-stat  { font-variant-numeric: tabular-nums; }
 
+.double-start-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: #8b5cf6;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 .rank-na { color: var(--text-3); font-style: italic; }
 
-.stat--good { color: #2f9e44; }
-.stat--bad  { color: #e03131; }
+.stat--good { color: var(--good-green); }
+.stat--bad  { color: var(--bad-red); }
 
 .team-pill {
   display: inline-block;

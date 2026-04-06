@@ -22,3 +22,6 @@ EOF
 *.db-shm
 *.db-wal
 *.lock
+
+# Docs
+DEPLOYMENT.md

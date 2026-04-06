@@ -64,6 +64,10 @@ function DifficultyBadge({ value }) {
   return <span className={`diff-badge ${cls}`}>{value.toFixed(1)}</span>
 }
 
+function DoubleStartBadge() {
+  return <span className="double-start-badge" title="Scheduled for two starts this week">2x</span>
+}
+
 function SortIcon({ colKey, sortKey, sortDir }) {
   if (sortKey !== colKey) return <ArrowUpDown size={12} className="sort-icon sort-icon--inactive" />
   return sortDir === 'asc'
@@ -114,6 +118,21 @@ export function Rankings() {
   const displayed = selectedDay
     ? pitchers.filter(p => p.game_date === selectedDay)
     : pitchers
+
+  // Count starts per pitcher (by name) to find double-start candidates
+  const startCounts = useMemo(() => {
+    const counts = {}
+    pitchers.forEach(p => {
+      if (p.name) {
+        counts[p.name] = (counts[p.name] || 0) + 1
+      }
+    })
+    return counts
+  }, [pitchers])
+
+  const doubleStarters = new Set(
+    Object.entries(startCounts).filter(([_, count]) => count >= 2).map(([name]) => name)
+  )
 
   return (
     <div className="rankings-page">
@@ -239,7 +258,9 @@ export function Rankings() {
                 <tr key={`${p.name}-${p.game_date}`} className={i % 2 === 0 ? 'row-even' : 'row-odd'}>
                   <td className="col-rank" style={{ width: getWidth('rank'), minWidth: 40 }}>{p.rank}</td>
                   <td className="col-team" style={{ width: getWidth('team_abbrev'), minWidth: 40 }}><span className="team-pill">{p.team_abbrev}</span></td>
-                  <td className="col-name" style={{ width: getWidth('name'), minWidth: 80 }}>{p.name}</td>
+                  <td className="col-name" style={{ width: getWidth('name'), minWidth: 80 }}>
+                    {p.name}{doubleStarters.has(p.name) && <DoubleStartBadge />}
+                  </td>
                   <td className="col-hand" style={{ width: getWidth('hand'), minWidth: 40 }}>{p.hand || '—'}</td>
                   <td className="col-opp" style={{ width: getWidth('opp_team_abbrev'), minWidth: 40 }}><span className="team-pill team-pill--opp">{p.opp_team_abbrev}</span></td>
                   <td className="col-difficulty" style={{ width: getWidth('difficulty'), minWidth: 50 }}><DifficultyBadge value={p.difficulty} /></td>
